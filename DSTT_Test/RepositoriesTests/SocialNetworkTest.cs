@@ -1,4 +1,4 @@
-namespace DSTT_Test
+namespace DSTT_Test.RepositoriesTests
 {
     public class SocialNetworkTest
     {
