@@ -8,6 +8,8 @@ namespace DSTT_Backend.Repositories.IRepositories
     {
         Task<List<Message>> GetMessages(int userId);
 
+        Task<List<Message>> GetMessagesFromUserIds(List<int> userIds);
+
         Task<int> CreateMessage(MessageDTO message);
 
         Task<OperationResult> DeleteMessage(Message message);

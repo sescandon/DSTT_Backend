@@ -20,12 +20,31 @@ namespace DSTT_Backend.Repositories
             return await _context.Messages.Where(m => m.UserId == userId).ToListAsync();
         }
 
+        public async Task<Message?> GetMessage(int messageId)
+        {
+            return await _context.Messages.FindAsync(messageId);
+        }
+
+        public async Task<List<Message>> GetMessagesFromUserIds(List<int> userIds)
+        {
+            if (userIds.Count == 0)
+            {
+                return new List<Message>();
+            }
+
+            var query = _context.Messages.Where(user => userIds.Contains(user.UserId))
+                .OrderByDescending(message => message.CreatedDate);
+
+            return await query.ToListAsync();
+        }
+
         public async Task<int> CreateMessage(MessageDTO message)
         {
             var newMessage = new Message
             {
                 Content = message.Content,
-                UserId = message.UserId
+                UserId = message.UserId,
+                CreatedDate = DateTime.Now
             };
 
             await _context.Messages.AddAsync(newMessage);
