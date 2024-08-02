@@ -1,5 +1,5 @@
 ﻿using DSTT_Backend.Database;
-using DSTT_Backend.Models;
+using DSTT_Backend.Models.Results;
 using DSTT_Backend.Repositories.IRepositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,10 +17,10 @@ namespace DSTT_Backend.Repositories
         public async Task<Follow?> IsFollowing(int followerId, int followedId)
         {
             Follow? follow = await _dbcontext.Follows.FirstOrDefaultAsync(f => f.FollowerId == followerId && f.FollowedId == followedId);
-            return follow; ;
+            return follow;
         }
 
-        public async Task<OperationResult> FollowUser(int followerId, int followedId)
+        public async Task<RepositoryOperationResult> FollowUser(int followerId, int followedId)
         {
             try
             {
@@ -32,11 +32,11 @@ namespace DSTT_Backend.Repositories
 
                 await _dbcontext.Follows.AddAsync(follow);
                 await _dbcontext.SaveChangesAsync();
-                return new OperationResult { Success = true };
+                return new RepositoryOperationResult { Success = true };
             }
             catch (Exception ex)
             {
-                return new OperationResult
+                return new RepositoryOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message
@@ -44,17 +44,17 @@ namespace DSTT_Backend.Repositories
             }
         }
 
-        public async Task<OperationResult> UnFollowUser(Follow follow)
+        public async Task<RepositoryOperationResult> UnFollowUser(Follow follow)
         {
             try
             {
                 _dbcontext.Follows.Remove(follow);
                 await _dbcontext.SaveChangesAsync();
-                return new OperationResult { Success = true };
+                return new RepositoryOperationResult { Success = true };
             }
             catch (Exception ex)
             {
-                return new OperationResult
+                return new RepositoryOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message

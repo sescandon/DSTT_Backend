@@ -1,5 +1,5 @@
 ﻿using DSTT_Backend.Database;
-using DSTT_Backend.Models;
+using DSTT_Backend.Models.Results;
 using DSTT_Backend.Models.User;
 
 namespace DSTT_Backend.Repositories.IRepositories
@@ -14,9 +14,9 @@ namespace DSTT_Backend.Repositories.IRepositories
 
         Task<int> CreateUser(UserDTO user);
 
-        Task<OperationResult> EditUser(UserDTO updatedUser, User existingUser);
+        Task<RepositoryOperationResult> EditUser(UserDTO updatedUser, User existingUser);
 
-        Task<OperationResult> DeleteUser(User user);
+        Task<RepositoryOperationResult> DeleteUser(User user);
 
     }
 }

@@ -1,6 +1,6 @@
 ﻿using DSTT_Backend.Database;
-using DSTT_Backend.Models;
 using DSTT_Backend.Models.Message;
+using DSTT_Backend.Models.Results;
 using DSTT_Backend.Repositories.IRepositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -53,13 +53,13 @@ namespace DSTT_Backend.Repositories
             return newMessage.Id;
         }
 
-        public async Task<OperationResult> DeleteMessage(Message message)
+        public async Task<RepositoryOperationResult> DeleteMessage(Message message)
         {
             try
             {
                 _context.Messages.Remove(message);
                 await _context.SaveChangesAsync();
-                return new OperationResult
+                return new RepositoryOperationResult
                 {
                     Success = true
                 };
@@ -67,7 +67,7 @@ namespace DSTT_Backend.Repositories
             catch (Exception ex)
             {
 
-                return new OperationResult
+                return new RepositoryOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message
@@ -75,20 +75,20 @@ namespace DSTT_Backend.Repositories
             }
         }
 
-        public async Task<OperationResult> UpdateMessage(string content, Message message)
+        public async Task<RepositoryOperationResult> UpdateMessage(string content, Message message)
         {
             try
             {
                 message.Content = content;
                 await _context.SaveChangesAsync();
-                return new OperationResult
+                return new RepositoryOperationResult
                 {
                     Success = true
                 };
             }
             catch (Exception ex)
             {
-                return new OperationResult
+                return new RepositoryOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message

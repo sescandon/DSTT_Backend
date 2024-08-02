@@ -1,5 +1,5 @@
 ﻿using DSTT_Backend.Database;
-using DSTT_Backend.Models;
+using DSTT_Backend.Models.Results;
 using DSTT_Backend.Models.User;
 using DSTT_Backend.Repositories.IRepositories;
 using Microsoft.EntityFrameworkCore;
@@ -46,18 +46,18 @@ namespace DSTT_Backend.Repositories
             return newUser.Id;
         }
 
-        public async Task<OperationResult> EditUser(UserDTO updatedUser, User existingUser)
+        public async Task<RepositoryOperationResult> EditUser(UserDTO updatedUser, User existingUser)
         {
             try
             {
                 existingUser.Username = updatedUser.Username;
                 await _dbcontext.SaveChangesAsync();
-                return new OperationResult { Success = true };
+                return new RepositoryOperationResult { Success = true };
             }
             catch (Exception ex)
             {
 
-                return new OperationResult
+                return new RepositoryOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message
@@ -66,18 +66,18 @@ namespace DSTT_Backend.Repositories
 
         }
 
-        public async Task<OperationResult> DeleteUser(User user)
+        public async Task<RepositoryOperationResult> DeleteUser(User user)
         {
             try
             {
                 _dbcontext.Users.Remove(user);
                 await _dbcontext.SaveChangesAsync();
-                return new OperationResult { Success = true };
+                return new RepositoryOperationResult { Success = true };
             }
             catch (Exception ex)
             {
 
-                return new OperationResult
+                return new RepositoryOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message

@@ -42,6 +42,8 @@ namespace DSTT_Test.RepositoriesTests
             await transaction.RollbackAsync();
         }
 
+        
+
         [Fact]
         public async Task UnFollowUser_Success()
         {
@@ -61,6 +63,7 @@ namespace DSTT_Test.RepositoriesTests
 
             await transaction.RollbackAsync();
         }
+        
 
         [Fact]
         public async Task IsFollowing_Success()
@@ -82,6 +85,7 @@ namespace DSTT_Test.RepositoriesTests
             await transaction.RollbackAsync();
         }
 
+        
         [Fact]
         public async Task GetFollowers_Success()
         {
@@ -98,8 +102,11 @@ namespace DSTT_Test.RepositoriesTests
             Assert.Single(followers);
             Assert.Equal(userId1, followers[0].Id);
 
+
             await transaction.RollbackAsync();
         }
+
+        
 
         [Fact]
         public async Task GetFollowers_NoFollowers_ReturnsEmptyList()
@@ -115,6 +122,8 @@ namespace DSTT_Test.RepositoriesTests
 
             await transaction.RollbackAsync();
         }
+
+        
 
         [Fact]
         public async Task GetFollowing_Success()
@@ -134,6 +143,8 @@ namespace DSTT_Test.RepositoriesTests
 
             await transaction.RollbackAsync();
         }
+
+        
 
         [Fact]
         public async Task GetFollowing_NoFollowed_ReturnsEmptyList()

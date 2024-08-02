@@ -1,13 +1,13 @@
 ﻿using DSTT_Backend.Database;
-using DSTT_Backend.Models;
+using DSTT_Backend.Models.Results;
 
 namespace DSTT_Backend.Repositories.IRepositories
 {
     public interface IFollowRepository
     {
-        Task<OperationResult> FollowUser(int followerId, int followedId);
+        Task<RepositoryOperationResult> FollowUser(int followerId, int followedId);
 
-        Task<OperationResult> UnFollowUser(Follow follow);
+        Task<RepositoryOperationResult> UnFollowUser(Follow follow);
 
         Task<List<User>> GetFollowers(int userId);
 
