@@ -3,6 +3,7 @@ using DSTT_Backend.Models.User;
 using DSTT_Backend.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using DSTT_Test;
 
 
 namespace DSTT_Test.RepositoriesTests
@@ -15,8 +16,8 @@ namespace DSTT_Test.RepositoriesTests
 
         public FollowRepositoryTest()
         {
-            //string? testDb = Environment.GetEnvironmentVariable("TestDBConnectionString");
-            string testDb = "Server=localhost;Database=DSTT_DB_TEST;Trusted_Connection=true;TrustServerCertificate=true";
+            string testDb = Secret.TestDBConnectionString;
+
             var options = new DbContextOptionsBuilder<DsttDbContext>()
                 .UseSqlServer(testDb)
                 .Options;

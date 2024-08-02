@@ -23,7 +23,7 @@ namespace DSTT_Test.ServicesTests
 
         public MessageServiceTest()
         {
-            string testDb = "Server=localhost;Database=DSTT_DB_TEST;Trusted_Connection=true;TrustServerCertificate=true";
+            string testDb = Secret.TestDBConnectionString;
             var options = new DbContextOptionsBuilder<DsttDbContext>()
             .UseSqlServer(testDb)
                 .Options;
