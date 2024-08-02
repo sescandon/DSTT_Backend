@@ -1,6 +1,6 @@
 ﻿namespace DSTT_Backend.Models.Message
 {
-    public class MessageDTO
+    public class MessagePostDTO
     {
         public int UserId { get; set; }
 

@@ -32,12 +32,12 @@ namespace DSTT_Test.RepositoriesTests
             var user = new UserDTO { Username = "TestMessageUser" };
             var userId = await _auxiliaryUserRepository.CreateUser(user);
 
-            var message = new MessageDTO { Content = "TestMessageContent", UserId = userId };
+            var message = new MessagePostDTO { Content = "TestMessageContent", UserId = userId };
             var messageId = await _messageRepository.CreateMessage(message);
 
             var createdMessage = await _messageRepository.GetMessage(messageId);
 
-            Assert.Equal(message.Content, createdMessage.Content);
+            Assert.Equal(message.Content, createdMessage!.Content);
             Assert.Equal(message.UserId, createdMessage.UserId);
 
             await transaction.RollbackAsync();
@@ -51,12 +51,12 @@ namespace DSTT_Test.RepositoriesTests
             var user = new UserDTO { Username = "TestDeleteMessageUser" };
             var userId = await _auxiliaryUserRepository.CreateUser(user);
 
-            var message = new MessageDTO { Content = "TestDeleteMessageContent", UserId = userId };
+            var message = new MessagePostDTO { Content = "TestDeleteMessageContent", UserId = userId };
             var messageId = await _messageRepository.CreateMessage(message);
 
             var createdMessage = await _messageRepository.GetMessage(messageId);
 
-            var result = await _messageRepository.DeleteMessage(createdMessage);
+            var result = await _messageRepository.DeleteMessage(createdMessage!);
 
             Assert.True(result.Success);
 
@@ -71,19 +71,19 @@ namespace DSTT_Test.RepositoriesTests
             var user = new UserDTO { Username = "TestUpdateMessageUser" };
             var userId = await _auxiliaryUserRepository.CreateUser(user);
 
-            var message = new MessageDTO { Content = "TestUpdateMessageContent", UserId = userId };
+            var message = new MessagePostDTO { Content = "TestUpdateMessageContent", UserId = userId };
             var messageId = await _messageRepository.CreateMessage(message);
 
             var createdMessage = await _messageRepository.GetMessage(messageId);
 
             var newContent = "UpdatedMessageContent";
-            var result = await _messageRepository.UpdateMessage(newContent, createdMessage);
+            var result = await _messageRepository.UpdateMessage(newContent, createdMessage!);
 
             Assert.True(result.Success);
 
             var updatedMessage = await _messageRepository.GetMessage(messageId);
 
-            Assert.Equal(newContent, updatedMessage.Content);
+            Assert.Equal(newContent, updatedMessage!.Content);
 
             await transaction.RollbackAsync();
         }
@@ -96,8 +96,8 @@ namespace DSTT_Test.RepositoriesTests
             var user = new UserDTO { Username = "TestGetMessagesUser" };
             var userId = await _auxiliaryUserRepository.CreateUser(user);
 
-            var message1 = new MessageDTO { Content = "TestGetMessagesContent1", UserId = userId };
-            var message2 = new MessageDTO { Content = "TestGetMessagesContent2", UserId = userId };
+            var message1 = new MessagePostDTO { Content = "TestGetMessagesContent1", UserId = userId };
+            var message2 = new MessagePostDTO { Content = "TestGetMessagesContent2", UserId = userId };
 
             await _messageRepository.CreateMessage(message1);
             await _messageRepository.CreateMessage(message2);
@@ -119,8 +119,8 @@ namespace DSTT_Test.RepositoriesTests
             var userId1 = await _auxiliaryUserRepository.CreateUser(user1);
             var userId2 = await _auxiliaryUserRepository.CreateUser(user2);
 
-            var message1 = new MessageDTO { Content = "TestGetMessagesFromUserIdsContent1", UserId = userId1 };
-            var message2 = new MessageDTO { Content = "TestGetMessagesFromUserIdsContent2", UserId = userId2 };
+            var message1 = new MessagePostDTO { Content = "TestGetMessagesFromUserIdsContent1", UserId = userId1 };
+            var message2 = new MessagePostDTO { Content = "TestGetMessagesFromUserIdsContent2", UserId = userId2 };
 
             await _messageRepository.CreateMessage(message1);
             await _messageRepository.CreateMessage(message2);
@@ -140,7 +140,7 @@ namespace DSTT_Test.RepositoriesTests
             var user = new UserDTO { Username = "TestGetMessageUser" };
             var userId = await _auxiliaryUserRepository.CreateUser(user);
 
-            var message = new MessageDTO { Content = "TestGetMessageContent", UserId = userId };
+            var message = new MessagePostDTO { Content = "TestGetMessageContent", UserId = userId };
             var messageId = await _messageRepository.CreateMessage(message);
 
             var createdMessage = await _messageRepository.GetMessage(messageId);

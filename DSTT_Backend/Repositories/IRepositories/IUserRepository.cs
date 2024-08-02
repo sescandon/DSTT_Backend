@@ -14,9 +14,9 @@ namespace DSTT_Backend.Repositories.IRepositories
 
         Task<int> CreateUser(UserDTO user);
 
-        Task<RepositoryOperationResult> EditUser(UserDTO updatedUser, User existingUser);
+        Task<BasicOperationResult> EditUser(UserDTO updatedUser, User existingUser);
 
-        Task<RepositoryOperationResult> DeleteUser(User user);
+        Task<BasicOperationResult> DeleteUser(User user);
 
     }
 }

@@ -1,11 +1,7 @@
 ﻿namespace DSTT_Backend.Models.Results
 {
-    public class ServiceOperationResult
+    public class ServiceOperationResult: BasicOperationResult
     {
-        public bool Success { get; set; }
-
-        public string? ErrorMessage { get; set; }
-
         public int? StatusCode { get; set; }
     }
 }

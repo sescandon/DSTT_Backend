@@ -12,11 +12,11 @@ namespace DSTT_Backend.Repositories.IRepositories
 
         Task<List<Message>> GetMessagesFromUserIds(List<int> userIds);
 
-        Task<int> CreateMessage(MessageDTO message);
+        Task<int> CreateMessage(MessagePostDTO message);
 
-        Task<RepositoryOperationResult> DeleteMessage(Message message);
+        Task<BasicOperationResult> DeleteMessage(Message message);
 
-        Task<RepositoryOperationResult> UpdateMessage(string content, Message message);
+        Task<BasicOperationResult> UpdateMessage(string content, Message message);
 
     }
 }

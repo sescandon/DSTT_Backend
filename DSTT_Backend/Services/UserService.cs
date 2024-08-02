@@ -108,7 +108,7 @@ namespace DSTT_Backend.Services
                     };
                 }
 
-                RepositoryOperationResult result = await _userRepository.EditUser(updatedUser, existingUser);
+                BasicOperationResult result = await _userRepository.EditUser(updatedUser, existingUser);
 
 
                 return new ServiceOperationResult
@@ -147,7 +147,7 @@ namespace DSTT_Backend.Services
                     };
                 }
 
-                RepositoryOperationResult result = await _userRepository.DeleteUser(user);
+                BasicOperationResult result = await _userRepository.DeleteUser(user);
 
                 return new ServiceOperationResult
                 {

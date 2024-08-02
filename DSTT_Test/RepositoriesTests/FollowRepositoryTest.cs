@@ -58,7 +58,7 @@ namespace DSTT_Test.RepositoriesTests
             await _followRepository.FollowUser(userId1, userId2);
             var follow = await _followRepository.IsFollowing(userId1, userId2);
 
-            var result = await _followRepository.UnFollowUser(follow);
+            var result = await _followRepository.UnFollowUser(follow!);
 
             Assert.True(result.Success);
 

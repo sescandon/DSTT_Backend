@@ -11,7 +11,7 @@ public partial class Message
 
     public string Content { get; set; } = null!;
 
-    public DateTime? CreatedDate { get; set; }
+    public DateTime CreatedDate { get; set; }
 
     public virtual User User { get; set; } = null!;
 }

@@ -38,7 +38,7 @@ namespace DSTT_Backend.Repositories
             return await query.ToListAsync();
         }
 
-        public async Task<int> CreateMessage(MessageDTO message)
+        public async Task<int> CreateMessage(MessagePostDTO message)
         {
             var newMessage = new Message
             {
@@ -53,13 +53,13 @@ namespace DSTT_Backend.Repositories
             return newMessage.Id;
         }
 
-        public async Task<RepositoryOperationResult> DeleteMessage(Message message)
+        public async Task<BasicOperationResult> DeleteMessage(Message message)
         {
             try
             {
                 _context.Messages.Remove(message);
                 await _context.SaveChangesAsync();
-                return new RepositoryOperationResult
+                return new BasicOperationResult
                 {
                     Success = true
                 };
@@ -67,7 +67,7 @@ namespace DSTT_Backend.Repositories
             catch (Exception ex)
             {
 
-                return new RepositoryOperationResult
+                return new BasicOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message
@@ -75,20 +75,20 @@ namespace DSTT_Backend.Repositories
             }
         }
 
-        public async Task<RepositoryOperationResult> UpdateMessage(string content, Message message)
+        public async Task<BasicOperationResult> UpdateMessage(string content, Message message)
         {
             try
             {
                 message.Content = content;
                 await _context.SaveChangesAsync();
-                return new RepositoryOperationResult
+                return new BasicOperationResult
                 {
                     Success = true
                 };
             }
             catch (Exception ex)
             {
-                return new RepositoryOperationResult
+                return new BasicOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message

@@ -60,7 +60,7 @@ namespace DSTT_Test.ServicesTests
                 var followResult = await _followRepository.FollowUser(createdFollowerResult, createdFollowedResult);
                 Assert.True(followResult.Success);
 
-                var message = new MessageDTO
+                var message = new MessagePostDTO
                 {
                     UserId = createdFollowedResult,
                     Content = "Test message"
@@ -101,7 +101,7 @@ namespace DSTT_Test.ServicesTests
 
                 if (hasMessages)
                 {
-                    var message = new MessageDTO
+                    var message = new MessagePostDTO
                     {
                         UserId = createdResult,
                         Content = "First Test message"
@@ -109,7 +109,7 @@ namespace DSTT_Test.ServicesTests
                     var messageResult = await _messageService.CreateMessage(message);
                     Assert.True(messageResult.Id > 0);
 
-                    var secondMessage = new MessageDTO
+                    var secondMessage = new MessagePostDTO
                     {
                         UserId = createdResult,
                         Content = "Second message"
@@ -151,7 +151,7 @@ namespace DSTT_Test.ServicesTests
                 var createdResult = await _userRepository.CreateUser(user);
                 Assert.True(createdResult > 0);
 
-                var message = new MessageDTO
+                var message = new MessagePostDTO
                 {
                     UserId = createdResult,
                     Content = "Test message"
@@ -194,7 +194,7 @@ namespace DSTT_Test.ServicesTests
                 var createdResult = await _userRepository.CreateUser(user);
                 Assert.True(createdResult > 0);
 
-                var message = new MessageDTO
+                var message = new MessagePostDTO
                 {
                     UserId = createdResult,
                     Content = "Test message"
@@ -235,7 +235,7 @@ namespace DSTT_Test.ServicesTests
                 var createdResult = await _userRepository.CreateUser(user);
                 Assert.True(createdResult > 0);
 
-                var message = new MessageDTO
+                var message = new MessagePostDTO
                 {
                     UserId = createdResult,
                     Content = "Test message"
@@ -245,7 +245,7 @@ namespace DSTT_Test.ServicesTests
             }
             else
             {
-                var message = new MessageDTO
+                var message = new MessagePostDTO
                 {
                     UserId = 9999,
                     Content = "Test message"

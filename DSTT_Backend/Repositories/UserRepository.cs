@@ -46,18 +46,18 @@ namespace DSTT_Backend.Repositories
             return newUser.Id;
         }
 
-        public async Task<RepositoryOperationResult> EditUser(UserDTO updatedUser, User existingUser)
+        public async Task<BasicOperationResult> EditUser(UserDTO updatedUser, User existingUser)
         {
             try
             {
                 existingUser.Username = updatedUser.Username;
                 await _dbcontext.SaveChangesAsync();
-                return new RepositoryOperationResult { Success = true };
+                return new BasicOperationResult { Success = true };
             }
             catch (Exception ex)
             {
 
-                return new RepositoryOperationResult
+                return new BasicOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message
@@ -66,18 +66,18 @@ namespace DSTT_Backend.Repositories
 
         }
 
-        public async Task<RepositoryOperationResult> DeleteUser(User user)
+        public async Task<BasicOperationResult> DeleteUser(User user)
         {
             try
             {
                 _dbcontext.Users.Remove(user);
                 await _dbcontext.SaveChangesAsync();
-                return new RepositoryOperationResult { Success = true };
+                return new BasicOperationResult { Success = true };
             }
             catch (Exception ex)
             {
 
-                return new RepositoryOperationResult
+                return new BasicOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message

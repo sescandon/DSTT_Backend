@@ -1,5 +1,5 @@
-﻿using DSTT_Backend.Database;
-using DSTT_Backend.Models.Results;
+﻿using DSTT_Backend.Models.Results;
+using DSTT_Backend.Models.User;
 
 namespace DSTT_Backend.Services.IServices
 {
@@ -11,11 +11,11 @@ namespace DSTT_Backend.Services.IServices
 
         Task<ServiceOperationResult> UnFollowUser(int followerId, int followeeId);
 
-        Task<ServiceDataOperationResult<User>> GetFollowers(int userId);
+        Task<ServiceDataOperationResult<UserModel>> GetFollowers(int userId);
 
-        Task<ServiceDataOperationResult<User>> GetFollowing(int userId);
+        Task<ServiceDataOperationResult<UserModel>> GetFollowing(int userId);
 
-        Task<ServiceOperationResult> IsFollowing(int followerId, int followeeId);
+        Task<ServiceBooleanOperationResult> IsFollowing(int followerId, int followeeId);
 
 
     }

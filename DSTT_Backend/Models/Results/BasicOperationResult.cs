@@ -1,6 +1,6 @@
 ﻿namespace DSTT_Backend.Models.Results
 {
-    public class RepositoryOperationResult
+    public class BasicOperationResult
     {
         public bool Success { get; set; }
 

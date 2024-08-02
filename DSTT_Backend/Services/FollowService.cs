@@ -1,5 +1,6 @@
 ﻿using DSTT_Backend.Database;
 using DSTT_Backend.Models.Results;
+using DSTT_Backend.Models.User;
 using DSTT_Backend.Repositories.IRepositories;
 using DSTT_Backend.Services.IServices;
 
@@ -32,7 +33,7 @@ namespace DSTT_Backend.Services
                     return new ServiceOperationResult
                     {
                         Success = false,
-                        ErrorMessage = $"User with id {followerId} exists: {followerExists}, User with id {followeeId} exists:{followeeExists}",
+                        ErrorMessage = $"User with id {followerId} exists: {followerExists}, User with id {followeeId} exists: {followeeExists}",
                         StatusCode = 400
                     };
                 }
@@ -146,14 +147,14 @@ namespace DSTT_Backend.Services
             }
         }
 
-        public async Task<ServiceDataOperationResult<User>> GetFollowers(int userId)
+        public async Task<ServiceDataOperationResult<UserModel>> GetFollowers(int userId)
         {
             try
             {
                 User? user = await _userRepository.GetUserById(userId);
                 if (user == null)
                 {
-                    return new ServiceDataOperationResult<User>
+                    return new ServiceDataOperationResult<UserModel>
                     {
                         Success = false,
                         ErrorMessage = "User doesn't exist",
@@ -163,17 +164,23 @@ namespace DSTT_Backend.Services
 
                 List<User> followers = await _followRepository.GetFollowers(userId);
 
-                return new ServiceDataOperationResult<User>
+                List<UserModel> followersList = followers.Select(follower => new UserModel
+                {
+                    Id = follower.Id,
+                    Username = follower.Username
+                }).ToList();
+
+                return new ServiceDataOperationResult<UserModel>
                 {
                     Success = true,
-                    Data = followers,
+                    Data = followersList,
                     StatusCode = 200
                 };
             }
             catch (Exception ex)
             {
 
-                return new ServiceDataOperationResult<User>
+                return new ServiceDataOperationResult<UserModel>
                 {
                     Success = false,
                     ErrorMessage = ex.Message,
@@ -182,14 +189,14 @@ namespace DSTT_Backend.Services
             }
         }
 
-        public async Task<ServiceDataOperationResult<User>> GetFollowing(int userId)
+        public async Task<ServiceDataOperationResult<UserModel>> GetFollowing(int userId)
         {
             try
             {
                 User? user = await _userRepository.GetUserById(userId);
                 if (user == null)
                 {
-                    return new ServiceDataOperationResult<User>
+                    return new ServiceDataOperationResult<UserModel>
                     {
                         Success = false,
                         ErrorMessage = "User doesn't exist",
@@ -197,19 +204,25 @@ namespace DSTT_Backend.Services
                     };
                 }
 
-                List<User> following = await _followRepository.GetFollowing(userId);
+                List<User> followingResult = await _followRepository.GetFollowing(userId);
 
-                return new ServiceDataOperationResult<User>
+                List<UserModel> followingList = followingResult.Select(followee => new UserModel
+                {
+                    Id = followee.Id,
+                    Username = followee.Username
+                }).ToList();
+
+                return new ServiceDataOperationResult<UserModel>
                 {
                     Success = true,
-                    Data = following,
+                    Data = followingList,
                     StatusCode = 200
                 };
             }
             catch (Exception ex)
             {
 
-                return new ServiceDataOperationResult<User>
+                return new ServiceDataOperationResult<UserModel>
                 {
                     Success = false,
                     ErrorMessage = ex.Message,
@@ -218,7 +231,7 @@ namespace DSTT_Backend.Services
             }
         }
 
-        public async Task<ServiceOperationResult> IsFollowing(int followerId, int followeeId)
+        public async Task<ServiceBooleanOperationResult> IsFollowing(int followerId, int followeeId)
         {
             try
             {
@@ -231,7 +244,7 @@ namespace DSTT_Backend.Services
 
                 if (!followerExists || !followeeExists)
                 {
-                    return new ServiceOperationResult
+                    return new ServiceBooleanOperationResult
                     {
                         Success = false,
                         ErrorMessage = $"User with id {followerId} exists: {followerExists}, User with id {followeeId} exists:{followeeExists}",
@@ -241,7 +254,7 @@ namespace DSTT_Backend.Services
 
                 if (followerId == followeeId)
                 {
-                    return new ServiceOperationResult
+                    return new ServiceBooleanOperationResult
                     {
                         Success = false,
                         ErrorMessage = "User can't follow itself",
@@ -251,15 +264,16 @@ namespace DSTT_Backend.Services
 
                 Follow? follow = await _followRepository.IsFollowing(followerId, followeeId);
 
-                return new ServiceOperationResult
+                return new ServiceBooleanOperationResult
                 {
-                    Success = follow != null
+                    Success = true,
+                    Result = follow != null,
                 };
             }
             catch (Exception ex)
             {
 
-                return new ServiceOperationResult
+                return new ServiceBooleanOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message,

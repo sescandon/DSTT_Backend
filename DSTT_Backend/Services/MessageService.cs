@@ -45,7 +45,8 @@ namespace DSTT_Backend.Services
                 {
                     Id = messages.Id,
                     UserId = messages.UserId,
-                    Content = messages.Content
+                    Content = messages.Content,
+                    CreatedDate = messages.CreatedDate
                 }).ToList();
 
                 return new ServiceDataOperationResult<MessageModel>
@@ -89,7 +90,8 @@ namespace DSTT_Backend.Services
                 {
                     Id = messages.Id,
                     UserId = messages.UserId,
-                    Content = messages.Content
+                    Content = messages.Content,
+                    CreatedDate = messages.CreatedDate
                 }).ToList();
 
                 return new ServiceDataOperationResult<MessageModel>
@@ -184,7 +186,7 @@ namespace DSTT_Backend.Services
             }
         }
 
-        public async Task<ServiceIDOperationResult> CreateMessage(MessageDTO message)
+        public async Task<ServiceIDOperationResult> CreateMessage(MessagePostDTO message)
         {
             try
             {

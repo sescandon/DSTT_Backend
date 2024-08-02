@@ -13,6 +13,6 @@ namespace DSTT_Backend.Services.IServices
 
         Task<ServiceOperationResult> DeleteMessage(int messageId);
 
-        Task<ServiceIDOperationResult> CreateMessage(MessageDTO message);
+        Task<ServiceIDOperationResult> CreateMessage(MessagePostDTO message);
     }
 }

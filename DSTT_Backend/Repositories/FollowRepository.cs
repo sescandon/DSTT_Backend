@@ -20,7 +20,7 @@ namespace DSTT_Backend.Repositories
             return follow;
         }
 
-        public async Task<RepositoryOperationResult> FollowUser(int followerId, int followedId)
+        public async Task<BasicOperationResult> FollowUser(int followerId, int followedId)
         {
             try
             {
@@ -32,11 +32,11 @@ namespace DSTT_Backend.Repositories
 
                 await _dbcontext.Follows.AddAsync(follow);
                 await _dbcontext.SaveChangesAsync();
-                return new RepositoryOperationResult { Success = true };
+                return new BasicOperationResult { Success = true };
             }
             catch (Exception ex)
             {
-                return new RepositoryOperationResult
+                return new BasicOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message
@@ -44,17 +44,17 @@ namespace DSTT_Backend.Repositories
             }
         }
 
-        public async Task<RepositoryOperationResult> UnFollowUser(Follow follow)
+        public async Task<BasicOperationResult> UnFollowUser(Follow follow)
         {
             try
             {
                 _dbcontext.Follows.Remove(follow);
                 await _dbcontext.SaveChangesAsync();
-                return new RepositoryOperationResult { Success = true };
+                return new BasicOperationResult { Success = true };
             }
             catch (Exception ex)
             {
-                return new RepositoryOperationResult
+                return new BasicOperationResult
                 {
                     Success = false,
                     ErrorMessage = ex.Message

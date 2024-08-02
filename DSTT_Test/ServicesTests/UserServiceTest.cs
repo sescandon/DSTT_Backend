@@ -9,9 +9,9 @@ namespace DSTT_Test.ServicesTests
 {
     public class UserServiceTest
     {
-        private readonly UserService _userService;
         private readonly DsttDbContext _context;
         private readonly UserRepository _userRepository;
+        private readonly UserService _userService;
 
         public UserServiceTest()
         {

@@ -7,5 +7,7 @@
         public int UserId { get; set; }
 
         public string Content { get; set; } = null!;
+
+        public DateTime CreatedDate { get; set; }
     }
 }
