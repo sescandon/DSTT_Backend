@@ -17,7 +17,7 @@ namespace DSTT_Backend.Repositories
 
         public async Task<List<Message>> GetMessages(int userId)
         {
-            return await _context.Messages.Where(m => m.UserId == userId).ToListAsync();
+            return await _context.Messages.Where(m => m.UserId == userId).OrderByDescending(message => message.CreatedDate).ToListAsync();
         }
 
         public async Task<Message?> GetMessage(int messageId)
@@ -27,7 +27,7 @@ namespace DSTT_Backend.Repositories
 
         public async Task<List<Message>> GetMessagesFromUserIds(List<int> userIds)
         {
-            if (userIds.Count == 0)
+            if (userIds.Count == 0 || userIds == null)
             {
                 return new List<Message>();
             }

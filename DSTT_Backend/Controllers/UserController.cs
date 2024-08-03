@@ -19,7 +19,7 @@ namespace DSTT_Backend.Controllers
 
         [HttpGet]
         [Route("GetUserById/{userId:int}")]
-        public async Task<IActionResult> GetUserFromId(int userId)
+        public async Task<IActionResult> GetUserById(int userId)
         {
             try
             {
@@ -42,7 +42,7 @@ namespace DSTT_Backend.Controllers
 
         [HttpGet]
         [Route("GetUserByUsername/{username}")]
-        public async Task<IActionResult> GetUserFromUsername(string username)
+        public async Task<IActionResult> GetUserByUsername(string username)
         {
             try
             {
@@ -82,6 +82,11 @@ namespace DSTT_Backend.Controllers
         [Route("EditUser/{userId:int}")]
         public async Task<IActionResult> EditUser([FromBody] UserDTO updatedUser, int userId)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             ServiceOperationResult result = await _userService.EditUser(updatedUser, userId);
             if (result.Success)
             {

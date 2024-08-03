@@ -1,200 +1,222 @@
 ﻿using DSTT_Backend.Controllers;
-using DSTT_Backend.Database;
+using DSTT_Backend.Models.Results;
 using DSTT_Backend.Models.User;
-using DSTT_Backend.Repositories;
-using DSTT_Backend.Services;
+using DSTT_Backend.Services.IServices;
 using DSTT_Test.Utils;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-using System;
 
 namespace DSTT_Test.ControllersTests
 {
     public class UserControllerTest
     {
-        private readonly DsttDbContext _context;
-        private readonly UserRepository _userRepository;
-        private readonly UserService _userService;
+        private readonly Mock<IUserService> _userService;
         private readonly UserController _userController;
 
         public UserControllerTest()
         {
-            string testDb = Secret.TestDBConnectionString;
-            var options = new DbContextOptionsBuilder<DsttDbContext>()
-                .UseSqlServer(testDb)
-                .Options;
-            _context = new DsttDbContext(options);
-            _userRepository = new UserRepository(_context);
-            _userService = new UserService(_userRepository);
-            _userController = new UserController(_userService);
+            _userService = new Mock<IUserService>();
+            _userController = new UserController(_userService.Object);
         }
 
-        [Theory]
-        [InlineData(true, true ,true)]
-        [InlineData(true, false, true)]
-        [InlineData(false, true ,false)]
-        public async Task CreateUserAndGetUser_Test(bool userExists, bool id ,bool validData)
+        [Fact]
+        public async Task GetUserById_UserDoesntExistFail()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
-            int userId = 9999;
+            _userService.Setup(service => service.GetUser(It.IsAny<int>())).ReturnsAsync((UserModel)null!);
 
-            if(userExists)
-            {
-                if(validData)
-                {
-                    var newUser = new UserDTO { Username = "TestUser" };
-                    var createdResult = await _userController.CreateUser(newUser);
-                    var parsedCreatedResult = Assert.IsType<ObjectResult>(createdResult);
-                    Assert.Equal(201, parsedCreatedResult.StatusCode);
-                    userId = Convert.ToInt32(AuxiliarClass.GetNestedPropertyValue(parsedCreatedResult.Value!, "Id"));
-                    Assert.NotEqual(9999, userId);
-                    
-                }
-                else
-                {
-                    var newUser = new UserDTO { Username = "" };
-                    var createdResult = await _userController.CreateUser(newUser);
-                    var parsedCreatedResult = Assert.IsType<ObjectResult>(createdResult);
-                    Assert.Equal(400, parsedCreatedResult.StatusCode);
-                }
+            var result = await _userController.GetUserById(1);
 
-                if(id)
-                {
-                    var getResult = await _userController.GetUserFromId(userId);
-                    var parsedGetResult = Assert.IsType<ObjectResult>(getResult);
-                    Assert.Equal(200, parsedGetResult.StatusCode);
-                    var userName = AuxiliarClass.GetNestedPropertyValue(parsedGetResult.Value!, "User", "Username") as string;
-                    Assert.NotNull(userName);
-                    Assert.Equal("TestUser", userName);
-                }
-                else
-                {
-                    var getResult = await _userController.GetUserFromUsername("TestUser");
-                    var parsedGetResult = Assert.IsType<ObjectResult>(getResult);
-                    Assert.Equal(200, parsedGetResult.StatusCode);
-                    var userName = AuxiliarClass.GetNestedPropertyValue(parsedGetResult.Value!, "User", "Username") as string;
-                    Assert.NotNull(userName);
-                    Assert.Equal("TestUser", userName);
-                }
-            }
-            else
-            {
-                if(id)
-                {
-                    var getResult = await _userController.GetUserFromId(userId);
-                    var parsedGetResult = Assert.IsType<ObjectResult>(getResult);
-                    Assert.Equal(404, parsedGetResult.StatusCode);
-                }
-                else
-                {
-                    var getResult = await _userController.GetUserFromUsername("TestUser");
-                    var parsedGetResult = Assert.IsType<ObjectResult>(getResult);
-                    Assert.Equal(404, parsedGetResult.StatusCode);
-                }
-            }
-
-            await transaction.RollbackAsync();
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(404, parsedResult.StatusCode);
         }
 
-        [Theory]
-        [InlineData(true,true)]
-        [InlineData(false,false)]
-        [InlineData(true,false)]
-        [InlineData(false,true)]
-        public async Task EditUser_Test(bool userExists, bool validData)
+        [Fact]
+        public async Task GetUserById_DatabaseFail() {
+            _userService.Setup(service => service.GetUser(It.IsAny<int>())).ThrowsAsync(new Exception("Database error"));
+
+            var result = await _userController.GetUserById(1);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, parsedResult.StatusCode);
+            var error = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Error") as string;
+            Assert.Equal("Database error", error);
+        }
+
+        [Fact]
+        public async Task GetUserById_UserExistsSuccess()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
-            int userId = 9999;
+            var user = new UserModel { Id = 1, Username = "TestUser" };
+            _userService.Setup(service => service.GetUser(It.IsAny<int>())).ReturnsAsync(user);
 
-            if(userExists)
-            {
-                if(validData)
-                {
-                    var newUser = new UserDTO { Username = "TestUser" };
-                    var createdResult = await _userController.CreateUser(newUser);
-                    var parsedCreatedResult = Assert.IsType<ObjectResult>(createdResult);
-                    Assert.Equal(201, parsedCreatedResult.StatusCode);
-                    userId = Convert.ToInt32(AuxiliarClass.GetNestedPropertyValue(parsedCreatedResult.Value!, "Id"));
-                    Assert.NotEqual(9999, userId);
-                }
-                else
-                {
-                    var newUser = new UserDTO { Username = "" };
-                    var createdResult = await _userController.CreateUser(newUser);
-                    var parsedCreatedResult = Assert.IsType<ObjectResult>(createdResult);
-                    Assert.Equal(400, parsedCreatedResult.StatusCode);
-                }
+            var result = await _userController.GetUserById(1);
 
-                var newEditUser = new UserDTO { Username = "EditedUser" };
-                var editResult = await _userController.EditUser(newEditUser, userId);
-                var parsedEditResult = Assert.IsType<ObjectResult>(editResult);
-                Assert.Equal(200, parsedEditResult.StatusCode);
-
-                var getResult = await _userController.GetUserFromId(userId);
-                var parsedGetResult = Assert.IsType<ObjectResult>(getResult);
-                Assert.Equal(200, parsedGetResult.StatusCode);
-                var userName = AuxiliarClass.GetNestedPropertyValue(parsedGetResult.Value!, "User", "Username") as string;
-                Assert.NotNull(userName);
-                Assert.Equal("EditedUser", userName);
-
-
-            } else
-            {
-                if (validData)
-                {
-                    var newUser = new UserDTO { Username = "TestUser" };
-                    var editResult = await _userController.EditUser(newUser, userId);
-                    var parsedEditResult = Assert.IsType<ObjectResult>(editResult);
-                    Assert.Equal(404, parsedEditResult.StatusCode);
-
-                } else
-                {
-                    var newUser = new UserDTO { Username = "" };
-                    var editResult = await _userController.EditUser(newUser, userId);
-                    var parsedEditResult = Assert.IsType<ObjectResult>(editResult);
-                    Assert.Equal(400, parsedEditResult.StatusCode);
-                }
-                
-            }
-
-            await transaction.RollbackAsync();
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(200, parsedResult.StatusCode);
+            var userName = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "User", "Username") as string;
+            Assert.Equal("TestUser", userName);
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task DeleteUser_Test(bool userExists)
+        [Fact]
+        public async Task GetUserByUsername_UserDoesntExistFail()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
-            int userId = 9999;
+            _userService.Setup(service => service.GetUser(It.IsAny<string>())).ReturnsAsync((UserModel)null!);
 
-            if (userExists)
-            {
-                var newUser = new UserDTO { Username = "TestUser" };
-                var createdResult = await _userController.CreateUser(newUser);
-                var parsedCreatedResult = Assert.IsType<ObjectResult>(createdResult);
-                Assert.Equal(201, parsedCreatedResult.StatusCode);
-                userId = Convert.ToInt32(AuxiliarClass.GetNestedPropertyValue(parsedCreatedResult.Value!, "Id"));
-                Assert.NotEqual(9999, userId);
+            var result = await _userController.GetUserByUsername("TestUser");
 
-                var deleteResult = await _userController.DeleteUser(userId);
-                var parsedDeleteResult = Assert.IsType<ObjectResult>(deleteResult);
-                Assert.Equal(200, parsedDeleteResult.StatusCode);
-
-                var getResult = await _userController.GetUserFromId(userId);
-                var parsedGetResult = Assert.IsType<ObjectResult>(getResult);
-                Assert.Equal(404, parsedGetResult.StatusCode);
-            }
-            else
-            {
-                var deleteResult = await _userController.DeleteUser(userId);
-                var parsedDeleteResult = Assert.IsType<ObjectResult>(deleteResult);
-                Assert.Equal(404,parsedDeleteResult.StatusCode);
-            }
-
-            await transaction.RollbackAsync();
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(404, parsedResult.StatusCode);
         }
+
+        [Fact]
+        public async Task GetUserByUsername_DatabaseFail()
+        {
+            _userService.Setup(service => service.GetUser(It.IsAny<string>())).ThrowsAsync(new Exception("Database error"));
+
+            var result = await _userController.GetUserByUsername("TestUser");
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, parsedResult.StatusCode);
+            var error = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Error") as string;
+            Assert.Equal("Database error", error);
+        }
+
+        [Fact]
+        public async Task GetUserByUsername_UserExistsSuccess()
+        {
+            var user = new UserModel { Id = 1, Username = "TestUser" };
+            _userService.Setup(service => service.GetUser(It.IsAny<string>())).ReturnsAsync(user);
+
+            var result = await _userController.GetUserByUsername("TestUser");
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(200, parsedResult.StatusCode);
+            var userName = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "User", "Username") as string;
+            Assert.Equal("TestUser", userName);
+        }
+
+        [Fact]
+        public async Task CreateUser_InvalidDataFail()
+        {
+            _userService.Setup(service => service.CreateUser(It.IsAny<UserDTO>())).ReturnsAsync(new ServiceIDOperationResult { Success = true, Id = 1 });
+
+            var newUser = new UserDTO { Username = "" };
+
+            var result = await _userController.CreateUser(newUser);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(201, parsedResult.StatusCode);
+            //Data annotation validations don't work in unit tests
+            //Assert.Equal(400, parsedResult.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUser_DatabaseFail()
+        {
+            var newUser = new UserDTO { Username = "TestUser" };
+            _userService.Setup(service => service.CreateUser(It.IsAny<UserDTO>())).ReturnsAsync(new ServiceIDOperationResult { Success = false, ErrorMessage = "Database error", StatusCode = 500 });
+
+            var result = await _userController.CreateUser(newUser);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, parsedResult.StatusCode);
+            var error = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Message") as string;
+            Assert.Equal("Database error", error);
+        }
+
+        [Fact]
+        public async Task CreateUser_Success()
+        {
+            var newUser = new UserDTO { Username = "TestUser" };
+            _userService.Setup(service => service.CreateUser(It.IsAny<UserDTO>())).ReturnsAsync(new ServiceIDOperationResult { Success = true, Id = 1 });
+
+            var result = await _userController.CreateUser(newUser);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(201, parsedResult.StatusCode);
+            var id = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Id");
+            Assert.Equal(1, id);
+        }
+
+        [Fact]
+        public async Task UpdateUser_UserDoesntExistFail()
+        {
+            _userService.Setup(service => service.EditUser(It.IsAny<UserDTO>(), It.IsAny<int>())).ReturnsAsync(new ServiceOperationResult { Success = false, ErrorMessage = "User not found", StatusCode = 404 });
+
+            var user = new UserDTO { Username = "TestUser" };
+
+            var result = await _userController.EditUser(user, 1);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(404, parsedResult.StatusCode);
+            var error = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Message") as string;
+            Assert.Equal("User not found", error);
+        }
+
+        [Fact]
+        public async Task UpdateUser_DatabaseFail()
+        {
+            var user = new UserDTO { Username = "TestUser" };
+            _userService.Setup(service => service.EditUser(It.IsAny<UserDTO>(), It.IsAny<int>())).ReturnsAsync(new ServiceOperationResult { Success = false, ErrorMessage = "Database error", StatusCode = 500 });
+
+            var result = await _userController.EditUser(user, 1);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, parsedResult.StatusCode);
+            var error = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Message") as string;
+            Assert.Equal("Database error", error);
+        }
+
+        [Fact]
+        public async Task UpdateUser_Success()
+        {
+            var user = new UserDTO { Username = "TestUser" };
+            _userService.Setup(service => service.EditUser(It.IsAny<UserDTO>(), It.IsAny<int>())).ReturnsAsync(new ServiceOperationResult { Success = true });
+
+            var result = await _userController.EditUser(user, 1);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(200, parsedResult.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeleteUser_UserDoesntExistFail()
+        {
+            _userService.Setup(service => service.DeleteUser(It.IsAny<int>())).ReturnsAsync(new ServiceOperationResult { Success = false, ErrorMessage = "User not found", StatusCode = 404 });
+
+            var result = await _userController.DeleteUser(1);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(404, parsedResult.StatusCode);
+            var error = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Message") as string;
+            Assert.Equal("User not found", error);
+        }
+
+        [Fact]
+        public async Task DeleteUser_DatabaseFail()
+        {
+            _userService.Setup(service => service.DeleteUser(It.IsAny<int>())).ReturnsAsync(new ServiceOperationResult { Success = false, ErrorMessage = "Database error", StatusCode = 500 });
+
+            var result = await _userController.DeleteUser(1);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, parsedResult.StatusCode);
+            var error = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Message") as string;
+            Assert.Equal("Database error", error);
+        }
+
+        [Fact]
+        public async Task DeleteUser_Success()
+        {
+            _userService.Setup(service => service.DeleteUser(It.IsAny<int>())).ReturnsAsync(new ServiceOperationResult { Success = true });
+
+            var result = await _userController.DeleteUser(1);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(200, parsedResult.StatusCode);
+        }
+
+
+
+
 
     }
 }

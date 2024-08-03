@@ -35,11 +35,11 @@ namespace DSTT_Backend.Services
                     };
                 }
 
-                List<User> followees = await _followRepository.GetFollowing(userId);
-                List<int> followeeIds = followees.Select(user => user.Id).ToList();
+                List<User> followees = await _followRepository.GetFollowing(userId) ?? new List<User>();
+                List<int> followeeIds = followees.Select(user => user.Id).ToList() ?? new List<int>();
                 followeeIds.Add(userId);
 
-                List<Message> rawMessages = await _messageRepository.GetMessagesFromUserIds(followeeIds);
+                List<Message> rawMessages = await _messageRepository.GetMessagesFromUserIds(followeeIds) ?? new List<Message>();
 
                 List<MessageModel> messageModels = rawMessages.Select(messages => new MessageModel
                 {
@@ -47,7 +47,7 @@ namespace DSTT_Backend.Services
                     UserId = messages.UserId,
                     Content = messages.Content,
                     CreatedDate = messages.CreatedDate
-                }).ToList();
+                }).ToList() ?? new List<MessageModel>();
 
                 return new ServiceDataOperationResult<MessageModel>
                 {

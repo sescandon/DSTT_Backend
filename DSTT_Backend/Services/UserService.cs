@@ -110,11 +110,19 @@ namespace DSTT_Backend.Services
 
                 BasicOperationResult result = await _userRepository.EditUser(updatedUser, existingUser);
 
+                if(!result.Success)
+                {
+                    return new ServiceOperationResult
+                    {
+                        Success = false,
+                        ErrorMessage = result.ErrorMessage,
+                        StatusCode = 500
+                    };
+                }
 
                 return new ServiceOperationResult
                 {
-                    Success = result.Success,
-                    ErrorMessage = result.ErrorMessage
+                    Success = true,
                 };
             }
             catch (Exception ex)
@@ -149,10 +157,19 @@ namespace DSTT_Backend.Services
 
                 BasicOperationResult result = await _userRepository.DeleteUser(user);
 
+                if (!result.Success)
+                {
+                    return new ServiceOperationResult
+                    {
+                        Success = false,
+                        ErrorMessage = result.ErrorMessage,
+                        StatusCode = 500
+                    };
+                }
+
                 return new ServiceOperationResult
                 {
-                    Success = result.Success,
-                    ErrorMessage = result.ErrorMessage
+                    Success = true,
                 };
 
             }
@@ -161,7 +178,7 @@ namespace DSTT_Backend.Services
 
                 return new ServiceOperationResult
                 {
-                    Success = true,
+                    Success = false,
                     ErrorMessage = ex.Message
                 };
             }

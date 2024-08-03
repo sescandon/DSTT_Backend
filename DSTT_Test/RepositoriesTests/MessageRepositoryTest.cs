@@ -7,19 +7,13 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DSTT_Test.RepositoriesTests
 {
-    public class MessageRepositoryTest
+    public class MessageRepositoryTest : BaseTest
     {
-        private readonly DsttDbContext _context;
         private readonly UserRepository _auxiliaryUserRepository;
         private readonly MessageRepository _messageRepository;
 
-        public MessageRepositoryTest()
+        public MessageRepositoryTest() : base()
         {
-            string testDb = Secret.TestDBConnectionString;
-            var options = new DbContextOptionsBuilder<DsttDbContext>()
-                .UseSqlServer(testDb)
-                .Options;
-            _context = new DsttDbContext(options);
             _messageRepository = new MessageRepository(_context);
             _auxiliaryUserRepository = new UserRepository(_context);
         }
@@ -27,7 +21,7 @@ namespace DSTT_Test.RepositoriesTests
         [Fact]
         public async Task CreateMessage_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
 
             var user = new UserDTO { Username = "TestMessageUser" };
             var userId = await _auxiliaryUserRepository.CreateUser(user);
@@ -40,13 +34,13 @@ namespace DSTT_Test.RepositoriesTests
             Assert.Equal(message.Content, createdMessage!.Content);
             Assert.Equal(message.UserId, createdMessage.UserId);
 
-            await transaction.RollbackAsync();
+            
         }
 
         [Fact]
         public async Task DeleteMessage_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
 
             var user = new UserDTO { Username = "TestDeleteMessageUser" };
             var userId = await _auxiliaryUserRepository.CreateUser(user);
@@ -60,13 +54,13 @@ namespace DSTT_Test.RepositoriesTests
 
             Assert.True(result.Success);
 
-            await transaction.RollbackAsync();
+            
         }
 
         [Fact]
         public async Task UpdateMessage_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
 
             var user = new UserDTO { Username = "TestUpdateMessageUser" };
             var userId = await _auxiliaryUserRepository.CreateUser(user);
@@ -85,13 +79,13 @@ namespace DSTT_Test.RepositoriesTests
 
             Assert.Equal(newContent, updatedMessage!.Content);
 
-            await transaction.RollbackAsync();
+            
         }
 
         [Fact]
         public async Task GetMessages_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
 
             var user = new UserDTO { Username = "TestGetMessagesUser" };
             var userId = await _auxiliaryUserRepository.CreateUser(user);
@@ -105,14 +99,15 @@ namespace DSTT_Test.RepositoriesTests
             var messages = await _messageRepository.GetMessages(userId);
 
             Assert.Equal(2, messages.Count);
-
-            await transaction.RollbackAsync();
+            Assert.Equal(message1.Content, messages[1].Content);
+            Assert.Equal(message2.Content, messages[0].Content);
+            
         }
 
         [Fact]
         public async Task GetMessagesFromUserIds_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
 
             var user1 = new UserDTO { Username = "TestGetMessagesFromUserIdsUser1" };
             var user2 = new UserDTO { Username = "TestGetMessagesFromUserIdsUser2" };
@@ -128,14 +123,16 @@ namespace DSTT_Test.RepositoriesTests
             var messages = await _messageRepository.GetMessagesFromUserIds(new List<int> { userId1, userId2 });
 
             Assert.Equal(2, messages.Count);
+            Assert.Equal(message1.Content, messages[1].Content);
+            Assert.Equal(message2.Content, messages[0].Content);
 
-            await transaction.RollbackAsync();
+            
         }
 
         [Fact]
         public async Task GetMessage_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
 
             var user = new UserDTO { Username = "TestGetMessageUser" };
             var userId = await _auxiliaryUserRepository.CreateUser(user);
@@ -149,19 +146,19 @@ namespace DSTT_Test.RepositoriesTests
             Assert.Equal(message.Content, createdMessage.Content);
             Assert.Equal(message.UserId, createdMessage.UserId);
 
-            await transaction.RollbackAsync();
+            
         }
 
         [Fact]
         public async Task GetMessage_MessageDoesNotExist_ReturnsNull()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
 
             var message = await _messageRepository.GetMessage(-1);
 
             Assert.Null(message);
 
-            await transaction.RollbackAsync();
+            
         }
 
     }

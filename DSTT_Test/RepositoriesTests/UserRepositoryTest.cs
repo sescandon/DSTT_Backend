@@ -3,28 +3,58 @@ using DSTT_Backend.Models.User;
 using DSTT_Backend.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.InMemory;
 
 namespace DSTT_Test.RepositoriesTests
 {
-    public class UserRepositoryTest
+    public class UserRepositoryTest : BaseTest
     {
-        private readonly DsttDbContext _context;
         private readonly UserRepository _userRepository;
 
-        public UserRepositoryTest()
+        public UserRepositoryTest() : base()
         {
-            string testDb = Secret.TestDBConnectionString;
-            var options = new DbContextOptionsBuilder<DsttDbContext>()
-                .UseSqlServer(testDb)
-                .Options;
-            _context = new DsttDbContext(options);
             _userRepository = new UserRepository(_context);
+        }
+
+        [Fact]
+        public async Task GetUsers_ReturnsAllUsers()
+        {
+            ClearDatabase();
+
+            var users = new List<UserDTO>
+            {
+                new UserDTO { Username = "User1" },
+                new UserDTO { Username = "User2" },
+                new UserDTO { Username = "User3" }
+            };
+
+            foreach (var user in users)
+            {
+                await _userRepository.CreateUser(user);
+            }
+
+
+            var result = await _userRepository.GetUsers();
+
+            Assert.Equal(users.Count, result.Count);
+            Assert.All(result, u => Assert.Contains(u.Username, users.Select(x => x.Username)));
+        }
+
+        [Fact]
+        public async Task GetUsers_EmptyDatabase_ReturnsEmptyList()
+        {
+            ClearDatabase();
+
+            var result = await _userRepository.GetUsers();
+
+            Assert.Empty(result);
         }
 
         [Fact]
         public async Task CreateUserAndGetUserById_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
+
             var user = new UserDTO
             {
                 Username = "TestIDUser"
@@ -35,24 +65,21 @@ namespace DSTT_Test.RepositoriesTests
 
             Assert.NotNull(result);
             Assert.Equal(userId, result.Id);
-            await transaction.RollbackAsync();
         }
-
-
 
         [Fact]
         public async Task GetUserById_NonExistentID_ReturnsNull()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
             var result = await _userRepository.GetUserById(999999);
             Assert.Null(result);
-            await transaction.RollbackAsync();
+
         }
 
         [Fact]
         public async Task CreateUserAndGetUserByName_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
             var user = new UserDTO
             {
                 Username = "TestNameUser"
@@ -63,23 +90,23 @@ namespace DSTT_Test.RepositoriesTests
 
             Assert.NotNull(result);
             Assert.Equal(user.Username, result.Username);
-            await transaction.RollbackAsync();
+
 
         }
 
         [Fact]
         public async Task GetUserByName_NonExistentName_ReturnsNull()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
             var result = await _userRepository.GetUserByName("NonExistentName");
             Assert.Null(result);
-            await transaction.RollbackAsync();
+
         }
 
         [Fact]
         public async Task EditUser_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
             var user = new UserDTO
             {
                 Username = "TestEditUser"
@@ -100,13 +127,13 @@ namespace DSTT_Test.RepositoriesTests
 
             Assert.True(editResult.Success);
 
-            await transaction.RollbackAsync();
+
         }
 
         [Fact]
         public async Task DeleteUser_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
 
             var user = new UserDTO
             {
@@ -126,19 +153,18 @@ namespace DSTT_Test.RepositoriesTests
             var deletedUser = await _userRepository.GetUserById(userId);
             Assert.Null(deletedUser);
 
-            await transaction.RollbackAsync();
+
         }
 
         [Fact]
         public async Task DeleteUser_NonExistentUser_ReturnsError()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            ClearDatabase();
 
             var deleteResult = await _userRepository.DeleteUser(new User());
 
             Assert.False(deleteResult.Success);
 
-            await transaction.RollbackAsync();
         }
 
     }

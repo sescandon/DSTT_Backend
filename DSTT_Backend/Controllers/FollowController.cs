@@ -84,7 +84,7 @@ namespace DSTT_Backend.Controllers
             ServiceBooleanOperationResult result = await _followService.IsFollowing(followInfo.FollowerId, followInfo.FollowedId);
             if (result.Success)
             {
-                return StatusCode(200, new { result.Result });
+                return StatusCode(200, new { IsFollowing=result.Result });
             }
             else
             {

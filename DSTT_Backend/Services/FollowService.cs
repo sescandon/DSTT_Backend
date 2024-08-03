@@ -99,7 +99,7 @@ namespace DSTT_Backend.Services
                     return new ServiceOperationResult
                     {
                         Success = false,
-                        ErrorMessage = $"User with id {followerId} exists: {followerExists}, User with id {followeeId} exists:{followeeExists}",
+                        ErrorMessage = $"User with id {followerId} exists: {followerExists}, User with id {followeeId} exists: {followeeExists}",
                         StatusCode = 400
                     };
                 }
@@ -247,7 +247,7 @@ namespace DSTT_Backend.Services
                     return new ServiceBooleanOperationResult
                     {
                         Success = false,
-                        ErrorMessage = $"User with id {followerId} exists: {followerExists}, User with id {followeeId} exists:{followeeExists}",
+                        ErrorMessage = $"User with id {followerId} exists: {followerExists}, User with id {followeeId} exists: {followeeExists}",
                         StatusCode = 400
                     };
                 }

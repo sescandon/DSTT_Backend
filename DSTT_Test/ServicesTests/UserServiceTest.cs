@@ -1,185 +1,336 @@
 ﻿using DSTT_Backend.Database;
+using DSTT_Backend.Models.Results;
 using DSTT_Backend.Models.User;
 using DSTT_Backend.Repositories;
+using DSTT_Backend.Repositories.IRepositories;
 using DSTT_Backend.Services;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DSTT_Test.ServicesTests
 {
-    public class UserServiceTest
+    public class UserServiceTest 
     {
-        private readonly DsttDbContext _context;
-        private readonly UserRepository _userRepository;
+        private readonly Mock<IUserRepository> _userRepository;
         private readonly UserService _userService;
 
         public UserServiceTest()
         {
-            string testDb = Secret.TestDBConnectionString;
-            var options = new DbContextOptionsBuilder<DsttDbContext>()
-                .UseSqlServer(testDb)
-                .Options;
-            _context = new DsttDbContext(options);
-            _userRepository = new UserRepository(_context);
-            _userService = new UserService(_userRepository);
+            _userRepository = new Mock<IUserRepository>();
+            _userService = new UserService(_userRepository.Object);
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CreateUserAndGetUser_Test(bool shouldSucceed)
+        [Fact]
+        public async Task CreateUser_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            
             var user = new UserDTO
             {
                 Username = "TestUser"
             };
 
+            _userRepository.Setup(repo => repo.CreateUser(user)).ReturnsAsync(1);
+
             var result = await _userService.CreateUser(user);
             Assert.True(result.Success);
+            Assert.Equal(1, result.Id);
+            Assert.Null(result.ErrorMessage);
+            Assert.Null(result.StatusCode);
+            _userRepository.Verify(repo => repo.CreateUser(user), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateUser_DatabaseFail()
+        {
+            
+            var user = new UserDTO
+            {
+                Username = "TestUser"
+            };
+
+            _userRepository.Setup(repo => repo.CreateUser(user)).ThrowsAsync(new Exception("Database error"));
+
+            var result = await _userService.CreateUser(user);
+            Assert.False(result.Success);
+            Assert.Null(result.Id);
+            Assert.Contains("Database error", result.ErrorMessage);
+            Assert.Equal(500, result.StatusCode);
+            _userRepository.Verify(repo => repo.CreateUser(user), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateUser_ExistingUserFail()
+        {
+            
+            var user = new UserDTO
+            {
+                Username = "TestUser"
+            };
+
+            var existingUser = new User
+            {
+                Id = 1,
+                Username = "TestUser"
+            };
+
+            _userRepository.Setup(repo => repo.GetUserByName(user.Username)).ReturnsAsync(existingUser);
+
+            var result = await _userService.CreateUser(user);
+            Assert.False(result.Success);
+            Assert.Null(result.Id);
+            Assert.Contains("User already exists", result.ErrorMessage);
+            Assert.Equal(400, result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserByName(user.Username), Times.Once);
+        }
+
+
+
+
+        [Fact]
+        public async Task GetUserId_Fail()
+        {
+
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync((User)null!);
+
+            var userResult = await _userService.GetUser(1);
+            Assert.Null(userResult);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+
+        }
+
+        [Fact]
+        public async Task GetUserId_Success()
+        {
+            var user = new User
+            {
+                Id = 1,
+                Username = "TestUser"
+            };
+
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync(user);
+
+            var userResult = await _userService.GetUser(1);
+            Assert.NotNull(userResult);
+            Assert.Equal(1, userResult.Id);
+            Assert.Equal("TestUser", userResult.Username);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+
+        }
+
+        [Fact]
+        public async Task GetUserName_Fail()
+        {
+
+            _userRepository.Setup(repo => repo.GetUserByName("TestUser")).ReturnsAsync((User)null!);
+
+            var userResult = await _userService.GetUser("TestUser");
+            Assert.Null(userResult);
+            _userRepository.Verify(repo => repo.GetUserByName("TestUser"), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetUserName_Success()
+        {
+            var user = new User
+            {
+                Id = 1,
+                Username = "TestUser"
+            };
+
+            _userRepository.Setup(repo => repo.GetUserByName("TestUser")).ReturnsAsync(user);
 
             var userResult = await _userService.GetUser("TestUser");
             Assert.NotNull(userResult);
+            Assert.Equal(1, userResult.Id);
             Assert.Equal("TestUser", userResult.Username);
+            _userRepository.Verify(repo => repo.GetUserByName("TestUser"), Times.Once);
 
-            if (!shouldSucceed)
-            {
-                var result2 = await _userService.CreateUser(user);
-                Assert.False(result2.Success);
-            }
-
-            await transaction.RollbackAsync();
         }
 
 
         [Fact]
-        public async Task GetUser_Fail()
+        public async Task EditUser_Success()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            var user = new User
+            {
+                Id = 1,
+                Username = "TestUser"
+            };
 
-            var userResult = await _userService.GetUser("TestUser");
-            Assert.Null(userResult);
+            var userDTO = new UserDTO
+            {
+                Username = "TestUser2"
+            };
 
-            await transaction.RollbackAsync();
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync(user);
+            _userRepository.Setup(repo => repo.EditUser(userDTO, user)).ReturnsAsync(new BasicOperationResult { Success = true });
+
+            var result = await _userService.EditUser(userDTO, user.Id);
+            Assert.True(result.Success);
+            Assert.Null(result.ErrorMessage);
+            Assert.Null(result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _userRepository.Verify(repo => repo.EditUser(userDTO, user), Times.Once);
         }
 
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task GetUserById_Test(bool shouldSucceed)
+        [Fact]
+        public async Task EditUser_UserNotFound()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
-            var user = new UserDTO
+            var userDTO = new UserDTO
+            {
+                Username = "TestUser2"
+            };
+
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync((User)null!);
+
+            var result = await _userService.EditUser(userDTO, 1);
+            Assert.False(result.Success);
+            Assert.Contains("User doesn't exist", result.ErrorMessage);
+            Assert.Equal(404, result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _userRepository.Verify(repo => repo.EditUser(userDTO, It.IsAny<User>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task EditUser_UserAlreadyHasUsername()
+        {
+            var user = new User
+            {
+                Id = 1,
+                Username = "TestUser"
+            };
+
+            var userDTO = new UserDTO
             {
                 Username = "TestUser"
             };
 
-            var result = await _userService.CreateUser(user);
-            Assert.True(result.Success);
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync(user);
 
-            var userId = result.Id;
-
-            Assert.NotNull(userId);
-
-            var userResult = await _userService.GetUser(userId.Value);
-            Assert.NotNull(userResult);
-            Assert.Equal("TestUser", userResult.Username);
-
-            if (!shouldSucceed)
-            {
-                var userResult2 = await _userService.GetUser(9999);
-                Assert.Null(userResult2);
-            }
-
-            await transaction.RollbackAsync();
+            var result = await _userService.EditUser(userDTO, user.Id);
+            Assert.False(result.Success);
+            Assert.Contains("User already has this username", result.ErrorMessage);
+            Assert.Equal(400, result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _userRepository.Verify(repo => repo.EditUser(userDTO, It.IsAny<User>()), Times.Never);
         }
 
-
-        [Theory]
-        [InlineData("TestUser", "UpdatedUser", true)]
-        [InlineData("TestUser", "UpdatedUser", false)]
-        [InlineData("TestUser", "TestUser", true)]
-        public async Task EditUser_Test(string initialUsername, string updatedUsername, bool exists)
+        [Fact]
+        public async Task EditUser_DatabaseFail()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
-            var user = new UserDTO { Username = initialUsername };
-            var result = await _userService.CreateUser(user);
-            Assert.True(result.Success);
-            var userId = result.Id;
-            Assert.NotNull(userId);
-
-            var userResult = await _userService.GetUser(userId.Value);
-            Assert.NotNull(userResult);
-            Assert.Equal(initialUsername, userResult.Username);
-
-            var updatedUser = new UserDTO { Username = updatedUsername };
-
-            if (initialUsername != updatedUsername) {
-                if (!exists)
-                {
-                    var editResult2 = await _userService.EditUser(updatedUser, 9999);
-                    Assert.False(editResult2.Success);
-                }
-                else
-                {
-                    var editResult = await _userService.EditUser(updatedUser, userId.Value);
-                    Assert.True(editResult.Success);
-
-                    var updatedUserResult = await _userService.GetUser(userId.Value);
-                    Assert.NotNull(updatedUserResult);
-                    Assert.Equal(updatedUsername, updatedUserResult.Username);
-                }
-            }
-            else
+            var user = new User
             {
-                var editResult = await _userService.EditUser(updatedUser, userId.Value);
-                Assert.False(editResult.Success);
-            }
-           
-            await transaction.RollbackAsync();
-
-        }
-
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task DeleteUser_Test(bool shouldSucceed)
-        {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
-            var user = new UserDTO
-            {
+                Id = 1,
                 Username = "TestUser"
             };
 
-            var result = await _userService.CreateUser(user);
-            Assert.True(result.Success);
-
-            var userId = result.Id;
-            Assert.NotNull(userId);
-
-            var userResult = await _userService.GetUser(userId.Value);
-            Assert.NotNull(userResult);
-            Assert.Equal("TestUser", userResult.Username);
-
-            if (shouldSucceed)
+            var userDTO = new UserDTO
             {
-                var deleteResult = await _userService.DeleteUser(userId.Value);
-                Assert.True(deleteResult.Success);
+                Username = "TestUser2"
+            };
 
-                var userResult2 = await _userService.GetUser(userId.Value);
-                Assert.Null(userResult2);
-            }
-            else
-            {
-                var deleteResult = await _userService.DeleteUser(9999);
-                Assert.False(deleteResult.Success);
-            }
+            _userRepository.Setup(repo => repo.GetUserById(1)).ThrowsAsync(new Exception("Database error"));
 
-            await transaction.RollbackAsync();
+            var result = await _userService.EditUser(userDTO, user.Id);
+            Assert.False(result.Success);
+            Assert.Contains("Database error", result.ErrorMessage);
+            Assert.Equal(500, result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
         }
 
+        [Fact]
+        public async Task EditUser_EditInDatabaseFail()
+        {
+            var user = new User
+            {
+                Id = 1,
+                Username = "TestUser"
+            };
+
+            var userDTO = new UserDTO
+            {
+                Username = "TestUser2"
+            };
+
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync(user);
+            _userRepository.Setup(repo => repo.EditUser(userDTO, user)).ReturnsAsync(new BasicOperationResult { Success = false, ErrorMessage = "Database error" });
+
+            var result = await _userService.EditUser(userDTO, user.Id);
+            Assert.False(result.Success);
+            Assert.Contains("Database error", result.ErrorMessage);
+            Assert.Equal(500, result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _userRepository.Verify(repo => repo.EditUser(userDTO, user), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteUser_Success()
+        {
+            var user = new User
+            {
+                Id = 1,
+                Username = "TestUser"
+            };
+
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync(user);
+            _userRepository.Setup(repo => repo.DeleteUser(user)).ReturnsAsync(new BasicOperationResult { Success = true });
+
+            var result = await _userService.DeleteUser(user.Id);
+            Assert.True(result.Success);
+            Assert.Null(result.ErrorMessage);
+            Assert.Null(result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _userRepository.Verify(repo => repo.DeleteUser(user), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteUser_UserNotFound()
+        {
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync((User)null!);
+
+            var result = await _userService.DeleteUser(1);
+            Assert.False(result.Success);
+            Assert.Contains("User doesn't exist", result.ErrorMessage);
+            Assert.Equal(404, result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _userRepository.Verify(repo => repo.DeleteUser(It.IsAny<User>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task DeleteUser_DatabaseFail()
+        {
+            var user = new User
+            {
+                Id = 1,
+                Username = "TestUser"
+            };
+
+            _userRepository.Setup(repo => repo.GetUserById(1)).ThrowsAsync(new Exception("Database error"));
+
+            var result = await _userService.DeleteUser(user.Id);
+            Assert.False(result.Success);
+            Assert.Contains("Database error", result.ErrorMessage);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteUser_DeleteInDatabaseFail()
+        {
+            var user = new User
+            {
+                Id = 1,
+                Username = "TestUser"
+            };
+
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync(user);
+            _userRepository.Setup(repo => repo.DeleteUser(user)).ReturnsAsync(new BasicOperationResult { Success = false, ErrorMessage = "Database error" });
+
+            var result = await _userService.DeleteUser(user.Id);
+            Assert.False(result.Success);
+            Assert.Contains("Database error", result.ErrorMessage);
+            Assert.Equal(500, result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _userRepository.Verify(repo => repo.DeleteUser(user), Times.Once);
+
+        }
 
     }
 }

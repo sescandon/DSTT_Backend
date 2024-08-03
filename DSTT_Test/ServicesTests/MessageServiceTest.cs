@@ -1,7 +1,9 @@
 ﻿using DSTT_Backend.Database;
 using DSTT_Backend.Models.Message;
+using DSTT_Backend.Models.Results;
 using DSTT_Backend.Models.User;
 using DSTT_Backend.Repositories;
+using DSTT_Backend.Repositories.IRepositories;
 using DSTT_Backend.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -15,246 +17,293 @@ namespace DSTT_Test.ServicesTests
 {
     public class MessageServiceTest
     {
+        private readonly Mock<IMessageRepository> _messageRepository;
+        private readonly Mock<IUserRepository> _userRepository;
+        private readonly Mock<IFollowRepository> _followRepository;
         private readonly MessageService _messageService;
-        private readonly DsttDbContext _context;
-        private readonly MessageRepository _messageRepository;
-        private readonly UserRepository _userRepository;
-        private readonly FollowRepository _followRepository;
 
-        public MessageServiceTest()
+        public MessageServiceTest() : base()
         {
-            string testDb = Secret.TestDBConnectionString;
-            var options = new DbContextOptionsBuilder<DsttDbContext>()
-            .UseSqlServer(testDb)
-                .Options;
-            _context = new DsttDbContext(options);
-            _messageRepository = new MessageRepository(_context);
-            _userRepository = new UserRepository(_context);
-            _followRepository = new FollowRepository(_context);
-            _messageService = new MessageService(_messageRepository, _userRepository, _followRepository);
+            _messageRepository = new Mock<IMessageRepository>();
+            _userRepository = new Mock<IUserRepository>();
+            _followRepository = new Mock<IFollowRepository>();
+            _messageService = new MessageService(_messageRepository.Object, _userRepository.Object, _followRepository.Object);
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task GetDashboardMessages_Test(bool userExists)
+        [Fact]
+        public async Task GetDashboardMessages_UserDoesNotExistFail()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync((User)null);
 
-            if (userExists)
-            {
-                var followerUser = new UserDTO
-                {
-                    Username = "FollowerUser"
-                };
-                var createdFollowerResult = await _userRepository.CreateUser(followerUser);
-                Assert.True(createdFollowerResult > 0);
+            var result = await _messageService.GetDashboardMessages(1);
 
-                var followedUser = new UserDTO
-                {
-                    Username = "FollowerUser"
-                };
-                var createdFollowedResult = await _userRepository.CreateUser(followedUser);
-                Assert.True(createdFollowedResult > 0);
-
-                var followResult = await _followRepository.FollowUser(createdFollowerResult, createdFollowedResult);
-                Assert.True(followResult.Success);
-
-                var message = new MessagePostDTO
-                {
-                    UserId = createdFollowedResult,
-                    Content = "Test message"
-                };
-
-                var messageResult = await _messageService.CreateMessage(message);
-                Assert.True(messageResult.Id > 0);
-
-                var dashboardMessages = await _messageService.GetDashboardMessages(createdFollowerResult);
-                Assert.NotEmpty(dashboardMessages.Data!);
-                Assert.True(dashboardMessages.Data!.Count == 1);
-                Assert.Equal("Test message", dashboardMessages.Data![0].Content);
-            }
-            else
-            {
-                var dashboardMessages = await _messageService.GetDashboardMessages(9999);
-                Assert.False(dashboardMessages.Success);
-            }
-
-            await transaction.RollbackAsync();
+            Assert.False(result.Success);
+            Assert.Equal("User does not exist", result.ErrorMessage);
+            Assert.Equal(400, result.StatusCode);
+            _userRepository.Verify(x => x.GetUserById(1), Times.Once);
         }
 
-        [Theory]
-        [InlineData (true, true)]
-        [InlineData(false, false)]
-        public async Task GetUserMessages_Test(bool userExists, bool hasMessages)
+        [Fact]
+        public async Task GetDashboardMessages_DatabaseFail()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            _userRepository.Setup(repo => repo.GetUserById(1)).ThrowsAsync(new Exception("Database error"));
 
-            if (userExists)
-            {
-                var user = new UserDTO
-                {
-                    Username = "User"
-                };
-                var createdResult = await _userRepository.CreateUser(user);
-                Assert.True(createdResult > 0);
+            var result = await _messageService.GetDashboardMessages(1);
 
-                if (hasMessages)
-                {
-                    var message = new MessagePostDTO
-                    {
-                        UserId = createdResult,
-                        Content = "First Test message"
-                    };
-                    var messageResult = await _messageService.CreateMessage(message);
-                    Assert.True(messageResult.Id > 0);
-
-                    var secondMessage = new MessagePostDTO
-                    {
-                        UserId = createdResult,
-                        Content = "Second message"
-                    };
-                    var secondMessageResult = await _messageService.CreateMessage(message);
-                    Assert.True(messageResult.Id > 0);
-
-                    var messages = await _messageService.GetUserMessages(createdResult);
-                    Assert.NotEmpty(messages.Data!);
-                    Assert.True(messages.Data!.Count == 2);
-                    Assert.Equal("First Test message", messages.Data![0].Content);
-
-                }
-                else
-                {
-                    var messages = await _messageService.GetUserMessages(createdResult);
-                    Assert.Empty(messages.Data!);
-                }
-
-
-            }
-
-            await transaction.RollbackAsync();
+            Assert.False(result.Success);
+            Assert.Equal("Database error", result.ErrorMessage);
+            Assert.Equal(500, result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task UpdateMessage_Test(bool messageExists)
+        [Fact]
+        public async Task GetDashboardMessages_NoFollowsEmptyListSuccess()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync(new User { Id = 1, Username = "TestUser" });
+            _followRepository.Setup(repo => repo.GetFollowing(1)).ReturnsAsync(new List<User>());
+            _messageRepository.Setup(repo => repo.GetMessagesFromUserIds(new List<int> { 1 })).ReturnsAsync(new List<Message>());
 
-            if (messageExists)
-            {
-                var user = new UserDTO
-                {
-                    Username = "User"
-                };
-                var createdResult = await _userRepository.CreateUser(user);
-                Assert.True(createdResult > 0);
-
-                var message = new MessagePostDTO
-                {
-                    UserId = createdResult,
-                    Content = "Test message"
-                };
-                var messageResult = await _messageService.CreateMessage(message);
-                Assert.True(messageResult.Id > 0);
-
-                string newContent = "New content";
-
-                var updateResult = await _messageService.UpdateMessage(newContent,messageResult.Id.Value);
-
-                Assert.True(updateResult.Success);
-            }
-            else
-            {
-
-                string newContent = "New content";
-
-                var updateResult = await _messageService.UpdateMessage(newContent, 9999);
-
-                Assert.False(updateResult.Success);
-            }
-
-            await transaction.RollbackAsync();
+            var result = await _messageService.GetDashboardMessages(1);
+            Assert.True(result.Success);
+            Assert.Empty(result.Data);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _followRepository.Verify(repo => repo.GetFollowing(1), Times.Once);
+            _messageRepository.Verify(repo => repo.GetMessagesFromUserIds(new List<int> { 1 }), Times.Once);
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task DeleteMessage_Test(bool messageExists)
+        [Fact]
+        public async Task GetDashboardMessages_FollowsExistSuccess()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            _userRepository.Setup(repo => repo.GetUserById(It.IsAny<int>())).ReturnsAsync(new User { Id = 1, Username = "TestUser" });
+            _followRepository.Setup(repo => repo.GetFollowing(It.IsAny<int>())).ReturnsAsync(new List<User> { new User { Id = 2, Username = "TestUser2" } });
+            _messageRepository.Setup(repo => repo.GetMessagesFromUserIds(It.IsAny<List<int>>())).ReturnsAsync(new List<Message> { new Message { Id = 1, UserId = 2, Content = "TestMessage", CreatedDate = DateTime.Now } });
 
-            if (messageExists)
-            {
-                var user = new UserDTO
-                {
-                    Username = "User"
-                };
-                var createdResult = await _userRepository.CreateUser(user);
-                Assert.True(createdResult > 0);
-
-                var message = new MessagePostDTO
-                {
-                    UserId = createdResult,
-                    Content = "Test message"
-                };
-                var messageResult = await _messageService.CreateMessage(message);
-                Assert.True(messageResult.Id > 0);
-
-                var messageToDelete = await _messageRepository.GetMessage(messageResult.Id.Value);
-                var deleteResult = await _messageRepository.DeleteMessage(messageToDelete!);
-                Assert.True(deleteResult.Success);
-
-                var deletedMessage = await _messageRepository.GetMessage(messageResult.Id.Value);
-                Assert.Null(deletedMessage);
-            }
-            else
-            {
-
-                var deletedMessage = await _messageRepository.DeleteMessage(new Message());
-                Assert.False(deletedMessage.Success);
-            }
-
-            await transaction.RollbackAsync();
+            var result = await _messageService.GetDashboardMessages(1);
+            Assert.True(result.Success);
+            Assert.Single(result.Data);
+            Assert.Equal(1, result.Data[0].Id);
+            Assert.Equal(2, result.Data[0].UserId);
+            Assert.Equal("TestMessage", result.Data[0].Content);
+            _userRepository.Verify(repo => repo.GetUserById(It.IsAny<int>()), Times.Once);
+            _followRepository.Verify(repo => repo.GetFollowing(It.IsAny<int>()), Times.Once);
+            _messageRepository.Verify(repo => repo.GetMessagesFromUserIds(It.IsAny<List<int>>()), Times.Once);
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task CreateMessage_Test(bool userExists)
+        [Fact]
+        public async Task GetDashboardMessages_FollowsAndPostsExistSuccess()
         {
-            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            _userRepository.Setup(repo => repo.GetUserById(It.IsAny<int>())).ReturnsAsync(new User { Id = 1, Username = "TestUser" });
+            _followRepository.Setup(repo => repo.GetFollowing(It.IsAny<int>())).ReturnsAsync(new List<User> { new User { Id = 2, Username = "TestUser2" } });
+            _messageRepository.Setup(repo => repo.GetMessagesFromUserIds(It.IsAny<List<int>>())).ReturnsAsync(new List<Message> { new Message { Id = 1, UserId = 2, Content = "TestMessage", CreatedDate = DateTime.Now }, new Message { Id = 2, UserId = 1, Content = "TestSelfMessage", CreatedDate = DateTime.Now.AddMinutes(1) } });
 
-            if (userExists)
-            {
-                var user = new UserDTO
-                {
-                    Username = "User"
-                };
-                var createdResult = await _userRepository.CreateUser(user);
-                Assert.True(createdResult > 0);
+            var result = await _messageService.GetDashboardMessages(1);
+            Assert.True(result.Success);
+            Assert.Equal(2, result.Data!.Count);
+            Assert.Equal(1, result.Data[0].Id);
+            Assert.Equal(2, result.Data[0].UserId);
+            Assert.Equal(2, result.Data[1].Id);
+            Assert.Equal(1, result.Data[1].UserId);
+            Assert.Equal("TestMessage", result.Data[0].Content);
+            _userRepository.Verify(repo => repo.GetUserById(It.IsAny<int>()), Times.Once);
+            _followRepository.Verify(repo => repo.GetFollowing(It.IsAny<int>()), Times.Once);
+            _messageRepository.Verify(repo => repo.GetMessagesFromUserIds(It.IsAny<List<int>>()), Times.Once);
+        }
 
-                var message = new MessagePostDTO
-                {
-                    UserId = createdResult,
-                    Content = "Test message"
-                };
-                var messageResult = await _messageService.CreateMessage(message);
-                Assert.True(messageResult.Id > 0);
-            }
-            else
-            {
-                var message = new MessagePostDTO
-                {
-                    UserId = 9999,
-                    Content = "Test message"
-                };
-                var messageResult = await _messageService.CreateMessage(message);
-                Assert.False(messageResult.Success);
-            }
+        [Fact]
+        public async Task GetUserMessages_UserDoesNotExistFail()
+        {
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync((User)null);
 
-            await transaction.RollbackAsync();
+            var result = await _messageService.GetUserMessages(1);
+
+            Assert.False(result.Success);
+            Assert.Equal("User does not exist", result.ErrorMessage);
+            Assert.Equal(400, result.StatusCode);
+            _userRepository.Verify(x => x.GetUserById(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetUserMessages_DatabaseFail()
+        {
+            _userRepository.Setup(repo => repo.GetUserById(1)).ThrowsAsync(new Exception("Database error"));
+
+            var result = await _messageService.GetUserMessages(1);
+
+            Assert.False(result.Success);
+            Assert.Equal("Database error", result.ErrorMessage);
+            Assert.Equal(500, result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetUserMessages_NoMessagesEmptyListSuccess()
+        {
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync(new User { Id = 1, Username = "TestUser" });
+            _messageRepository.Setup(repo => repo.GetMessages(1)).ReturnsAsync(new List<Message>());
+
+            var result = await _messageService.GetUserMessages(1);
+            Assert.True(result.Success);
+            Assert.Empty(result.Data);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _messageRepository.Verify(repo => repo.GetMessages(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetUserMessages_MessagesExistSuccess()
+        {
+            _userRepository.Setup(repo => repo.GetUserById(It.IsAny<int>())).ReturnsAsync(new User { Id = 1, Username = "TestUser" });
+            _messageRepository.Setup(repo => repo.GetMessages(1)).ReturnsAsync(new List<Message> { new Message { Id = 1, UserId = 1, Content = "TestMessage", CreatedDate = DateTime.Now } });
+
+            var result = await _messageService.GetUserMessages(1);
+            Assert.True(result.Success);
+            Assert.Single(result.Data);
+            Assert.Equal(1, result.Data[0].Id);
+            Assert.Equal(1, result.Data[0].UserId);
+            Assert.Equal("TestMessage", result.Data[0].Content);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _messageRepository.Verify(repo => repo.GetMessages(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetUserMessages_MultipleMessagesExistSuccess()
+        {
+            _userRepository.Setup(repo => repo.GetUserById(It.IsAny<int>())).ReturnsAsync(new User { Id = 1, Username = "TestUser" });
+            _messageRepository.Setup(repo => repo.GetMessages(1)).ReturnsAsync(new List<Message> { new Message { Id = 1, UserId = 1, Content = "TestMessage", CreatedDate = DateTime.Now }, new Message { Id = 2, UserId = 1, Content = "TestMessage2", CreatedDate = DateTime.Now.AddMinutes(1) } });
+
+            var result = await _messageService.GetUserMessages(1);
+            Assert.True(result.Success);
+            Assert.Equal(2, result.Data!.Count);
+            Assert.Equal(1, result.Data[0].Id);
+            Assert.Equal(1, result.Data[0].UserId);
+            Assert.Equal(2, result.Data[1].Id);
+            Assert.Equal(1, result.Data[1].UserId);
+            Assert.Equal("TestMessage", result.Data[0].Content);
+            _userRepository.Verify(repo => repo.GetUserById(It.IsAny<int>()), Times.Once);
+            _messageRepository.Verify(repo => repo.GetMessages(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateMessage_UserDoesNotExistFail()
+        {
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync((User)null);
+
+            var result = await _messageService.CreateMessage(new MessagePostDTO { UserId = 1, Content = "TestMessage" });
+
+            Assert.False(result.Success);
+            Assert.Equal("User does not exist", result.ErrorMessage);
+            Assert.Equal(400, result.StatusCode);
+            _userRepository.Verify(x => x.GetUserById(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateMessage_DatabaseFail()
+        {
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync(new User { Id = 1, Username = "TestUser" });
+            _messageRepository.Setup(repo => repo.CreateMessage(It.IsAny<MessagePostDTO>())).ThrowsAsync(new Exception("Database error"));
+
+            var result = await _messageService.CreateMessage(new MessagePostDTO { UserId = 1, Content = "TestMessage" });
+
+            Assert.False(result.Success);
+            Assert.Equal("Database error", result.ErrorMessage);
+            Assert.Equal(500, result.StatusCode);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _messageRepository.Verify(repo => repo.CreateMessage(It.IsAny<MessagePostDTO>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateMessage_Success()
+        {
+            _userRepository.Setup(repo => repo.GetUserById(1)).ReturnsAsync(new User { Id = 1, Username = "TestUser" });
+            _messageRepository.Setup(repo => repo.CreateMessage(It.IsAny<MessagePostDTO>())).ReturnsAsync(1);
+
+            var result = await _messageService.CreateMessage(new MessagePostDTO { UserId = 1, Content = "TestMessage" });
+
+            Assert.True(result.Success);
+            Assert.Equal(1, result.Id);
+            _userRepository.Verify(repo => repo.GetUserById(1), Times.Once);
+            _messageRepository.Verify(repo => repo.CreateMessage(It.IsAny<MessagePostDTO>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteMessage_MessageDoesNotExistFail()
+        {
+            _messageRepository.Setup(repo => repo.GetMessage(1)).ReturnsAsync((Message)null);
+
+            var result = await _messageService.DeleteMessage(1);
+
+            Assert.False(result.Success);
+            Assert.Equal("Message does not exist", result.ErrorMessage);
+            Assert.Equal(400, result.StatusCode);
+            _messageRepository.Verify(x => x.GetMessage(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteMessage_DatabaseFail()
+        {
+            _messageRepository.Setup(repo => repo.GetMessage(1)).ReturnsAsync(new Message { Id = 1, UserId = 1, Content = "TestMessage", CreatedDate = DateTime.Now });
+            _messageRepository.Setup(repo => repo.DeleteMessage(It.IsAny<Message>())).ThrowsAsync(new Exception("Database error"));
+
+            var result = await _messageService.DeleteMessage(1);
+
+            Assert.False(result.Success);
+            Assert.Equal("Database error", result.ErrorMessage);
+            Assert.Equal(500, result.StatusCode);
+            _messageRepository.Verify(repo => repo.GetMessage(1), Times.Once);
+            _messageRepository.Verify(repo => repo.DeleteMessage(It.IsAny<Message>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteMessage_Success()
+        {
+            _messageRepository.Setup(repo => repo.GetMessage(1)).ReturnsAsync(new Message { Id = 1, UserId = 1, Content = "TestMessage", CreatedDate = DateTime.Now });
+            _messageRepository.Setup(repo => repo.DeleteMessage(It.IsAny<Message>())).ReturnsAsync(new BasicOperationResult { Success = true });
+
+            var result = await _messageService.DeleteMessage(1);
+
+            Assert.True(result.Success);
+            _messageRepository.Verify(repo => repo.GetMessage(1), Times.Once);
+            _messageRepository.Verify(repo => repo.DeleteMessage(It.IsAny<Message>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateMessage_MessageDoesNotExistFail()
+        {
+            _messageRepository.Setup(repo => repo.GetMessage(1)).ReturnsAsync((Message)null);
+
+            var result = await _messageService.UpdateMessage("TestMessage", 1);
+
+            Assert.False(result.Success);
+            Assert.Equal("Message does not exist", result.ErrorMessage);
+            Assert.Equal(400, result.StatusCode);
+            _messageRepository.Verify(x => x.GetMessage(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateMessage_DatabaseFail()
+        {
+            _messageRepository.Setup(repo => repo.GetMessage(1)).ReturnsAsync(new Message { Id = 1, UserId = 1, Content = "TestMessage", CreatedDate = DateTime.Now });
+            _messageRepository.Setup(repo => repo.UpdateMessage(It.IsAny<string>(), It.IsAny<Message>())).ThrowsAsync(new Exception("Database error"));
+
+            var result = await _messageService.UpdateMessage("TestMessage", 1);
+
+            Assert.False(result.Success);
+            Assert.Equal("Database error", result.ErrorMessage);
+            Assert.Equal(500, result.StatusCode);
+            _messageRepository.Verify(repo => repo.GetMessage(1), Times.Once);
+            _messageRepository.Verify(repo => repo.UpdateMessage(It.IsAny<string>(), It.IsAny<Message>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateMessage_Success()
+        {
+            _messageRepository.Setup(repo => repo.GetMessage(1)).ReturnsAsync(new Message { Id = 1, UserId = 1, Content = "TestMessage", CreatedDate = DateTime.Now });
+            _messageRepository.Setup(repo => repo.UpdateMessage(It.IsAny<string>(), It.IsAny<Message>())).ReturnsAsync(new BasicOperationResult { Success = true });
+
+            var result = await _messageService.UpdateMessage("TestMessage", 1);
+
+            Assert.True(result.Success);
+            _messageRepository.Verify(repo => repo.GetMessage(1), Times.Once);
+            _messageRepository.Verify(repo => repo.UpdateMessage(It.IsAny<string>(), It.IsAny<Message>()), Times.Once);
         }
 
 
