@@ -97,6 +97,104 @@ namespace DSTT_Test.ControllersTests
             await transaction.RollbackAsync();
         }
 
+        [Theory]
+        [InlineData(true,true)]
+        [InlineData(false,false)]
+        [InlineData(true,false)]
+        [InlineData(false,true)]
+        public async Task EditUser_Test(bool userExists, bool validData)
+        {
+            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            int userId = 9999;
+
+            if(userExists)
+            {
+                if(validData)
+                {
+                    var newUser = new UserDTO { Username = "TestUser" };
+                    var createdResult = await _userController.CreateUser(newUser);
+                    var parsedCreatedResult = Assert.IsType<ObjectResult>(createdResult);
+                    Assert.Equal(201, parsedCreatedResult.StatusCode);
+                    userId = Convert.ToInt32(AuxiliarClass.GetNestedPropertyValue(parsedCreatedResult.Value!, "Id"));
+                    Assert.NotEqual(9999, userId);
+                }
+                else
+                {
+                    var newUser = new UserDTO { Username = "" };
+                    var createdResult = await _userController.CreateUser(newUser);
+                    var parsedCreatedResult = Assert.IsType<ObjectResult>(createdResult);
+                    Assert.Equal(400, parsedCreatedResult.StatusCode);
+                }
+
+                var newEditUser = new UserDTO { Username = "EditedUser" };
+                var editResult = await _userController.EditUser(newEditUser, userId);
+                var parsedEditResult = Assert.IsType<ObjectResult>(editResult);
+                Assert.Equal(200, parsedEditResult.StatusCode);
+
+                var getResult = await _userController.GetUserFromId(userId);
+                var parsedGetResult = Assert.IsType<ObjectResult>(getResult);
+                Assert.Equal(200, parsedGetResult.StatusCode);
+                var userName = AuxiliarClass.GetNestedPropertyValue(parsedGetResult.Value!, "User", "Username") as string;
+                Assert.NotNull(userName);
+                Assert.Equal("EditedUser", userName);
+
+
+            } else
+            {
+                if (validData)
+                {
+                    var newUser = new UserDTO { Username = "TestUser" };
+                    var editResult = await _userController.EditUser(newUser, userId);
+                    var parsedEditResult = Assert.IsType<ObjectResult>(editResult);
+                    Assert.Equal(404, parsedEditResult.StatusCode);
+
+                } else
+                {
+                    var newUser = new UserDTO { Username = "" };
+                    var editResult = await _userController.EditUser(newUser, userId);
+                    var parsedEditResult = Assert.IsType<ObjectResult>(editResult);
+                    Assert.Equal(400, parsedEditResult.StatusCode);
+                }
+                
+            }
+
+            await transaction.RollbackAsync();
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DeleteUser_Test(bool userExists)
+        {
+            using IDbContextTransaction transaction = _context.Database.BeginTransaction();
+            int userId = 9999;
+
+            if (userExists)
+            {
+                var newUser = new UserDTO { Username = "TestUser" };
+                var createdResult = await _userController.CreateUser(newUser);
+                var parsedCreatedResult = Assert.IsType<ObjectResult>(createdResult);
+                Assert.Equal(201, parsedCreatedResult.StatusCode);
+                userId = Convert.ToInt32(AuxiliarClass.GetNestedPropertyValue(parsedCreatedResult.Value!, "Id"));
+                Assert.NotEqual(9999, userId);
+
+                var deleteResult = await _userController.DeleteUser(userId);
+                var parsedDeleteResult = Assert.IsType<ObjectResult>(deleteResult);
+                Assert.Equal(200, parsedDeleteResult.StatusCode);
+
+                var getResult = await _userController.GetUserFromId(userId);
+                var parsedGetResult = Assert.IsType<ObjectResult>(getResult);
+                Assert.Equal(404, parsedGetResult.StatusCode);
+            }
+            else
+            {
+                var deleteResult = await _userController.DeleteUser(userId);
+                var parsedDeleteResult = Assert.IsType<ObjectResult>(deleteResult);
+                Assert.Equal(404,parsedDeleteResult.StatusCode);
+            }
+
+            await transaction.RollbackAsync();
+        }
 
     }
 }
