@@ -3,7 +3,7 @@ using DSTT_Backend.Database;
 using DSTT_Backend.Models.User;
 using DSTT_Backend.Repositories;
 using DSTT_Backend.Services;
-using Microsoft.AspNetCore.Http;
+using DSTT_Test.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -30,21 +30,6 @@ namespace DSTT_Test.ControllersTests
             _userController = new UserController(_userService);
         }
 
-        private object? GetNestedPropertyValue(object obj, params string[] propertyNames)
-        {
-            object value = obj;
-            foreach (var prop in propertyNames)
-            {
-                var property = value.GetType().GetProperty(prop);
-                if (property == null)
-                    return null;
-                value = property.GetValue(value)!;
-                if (value == null)
-                    return null;
-            }
-            return value;
-        }
-
         [Theory]
         [InlineData(true, true ,true)]
         [InlineData(true, false, true)]
@@ -62,7 +47,7 @@ namespace DSTT_Test.ControllersTests
                     var createdResult = await _userController.CreateUser(newUser);
                     var parsedCreatedResult = Assert.IsType<ObjectResult>(createdResult);
                     Assert.Equal(201, parsedCreatedResult.StatusCode);
-                    userId = Convert.ToInt32(GetNestedPropertyValue(parsedCreatedResult.Value!, "Id"));
+                    userId = Convert.ToInt32(AuxiliarClass.GetNestedPropertyValue(parsedCreatedResult.Value!, "Id"));
                     Assert.NotEqual(9999, userId);
                     
                 }
@@ -79,7 +64,7 @@ namespace DSTT_Test.ControllersTests
                     var getResult = await _userController.GetUserFromId(userId);
                     var parsedGetResult = Assert.IsType<ObjectResult>(getResult);
                     Assert.Equal(200, parsedGetResult.StatusCode);
-                    var userName = GetNestedPropertyValue(parsedGetResult.Value!, "User", "Username") as string;
+                    var userName = AuxiliarClass.GetNestedPropertyValue(parsedGetResult.Value!, "User", "Username") as string;
                     Assert.NotNull(userName);
                     Assert.Equal("TestUser", userName);
                 }
@@ -88,7 +73,7 @@ namespace DSTT_Test.ControllersTests
                     var getResult = await _userController.GetUserFromUsername("TestUser");
                     var parsedGetResult = Assert.IsType<ObjectResult>(getResult);
                     Assert.Equal(200, parsedGetResult.StatusCode);
-                    var userName = GetNestedPropertyValue(parsedGetResult.Value!, "User", "Username") as string;
+                    var userName = AuxiliarClass.GetNestedPropertyValue(parsedGetResult.Value!, "User", "Username") as string;
                     Assert.NotNull(userName);
                     Assert.Equal("TestUser", userName);
                 }
