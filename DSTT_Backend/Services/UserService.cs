@@ -15,6 +15,23 @@ namespace DSTT_Backend.Services
             _userRepository = userRepository;
         }
 
+        public async Task<List<UserModel>> GetUsers()
+        {
+            List<User> users = await _userRepository.GetUsers();
+            List<UserModel> userModels = new();
+
+            foreach (User user in users)
+            {
+                userModels.Add(new UserModel
+                {
+                    Id = user.Id,
+                    Username = user.Username
+                });
+            }
+
+            return userModels;
+        }
+
         public async Task<UserModel?> GetUser(int userId)
         {
             User? user = await _userRepository.GetUserById(userId);

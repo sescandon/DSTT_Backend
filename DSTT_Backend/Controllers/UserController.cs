@@ -18,6 +18,21 @@ namespace DSTT_Backend.Controllers
         }
 
         [HttpGet]
+        [Route("GetAllUsers")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try
+            {
+                List<UserModel> users = await _userService.GetUsers();
+                return StatusCode(200, new { Users = users });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Internal server error", Error = ex.Message });
+            }
+        }
+
+        [HttpGet]
         [Route("GetUserById/{userId:int}")]
         public async Task<IActionResult> GetUserById(int userId)
         {

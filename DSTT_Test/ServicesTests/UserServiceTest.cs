@@ -19,6 +19,34 @@ namespace DSTT_Test.ServicesTests
         }
 
         [Fact]
+        public async Task GetUsers_Success()
+        {
+            var users = new List<User>
+            {
+                new User
+                {
+                    Id = 1,
+                    Username = "TestUser1"
+                },
+                new User
+                {
+                    Id = 2,
+                    Username = "TestUser2"
+                }
+            };
+
+            _userRepository.Setup(repo => repo.GetUsers()).ReturnsAsync(users);
+
+            var usersResult = await _userService.GetUsers();
+            Assert.Equal(2, usersResult.Count);
+            Assert.Equal(1, usersResult[0].Id);
+            Assert.Equal("TestUser1", usersResult[0].Username);
+            Assert.Equal(2, usersResult[1].Id);
+            Assert.Equal("TestUser2", usersResult[1].Username);
+            _userRepository.Verify(repo => repo.GetUsers(), Times.Once);
+        }
+
+        [Fact]
         public async Task CreateUser_Success()
         {
             

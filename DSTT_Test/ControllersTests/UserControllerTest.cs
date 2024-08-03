@@ -1,4 +1,5 @@
 ﻿using DSTT_Backend.Controllers;
+using DSTT_Backend.Database;
 using DSTT_Backend.Models.Results;
 using DSTT_Backend.Models.User;
 using DSTT_Backend.Services.IServices;
@@ -16,6 +17,36 @@ namespace DSTT_Test.ControllersTests
         {
             _userService = new Mock<IUserService>();
             _userController = new UserController(_userService.Object);
+        }
+
+        [Fact]
+        public async Task GetAllUsers_Success()
+        {
+            var users = new List<UserModel> { new UserModel { Id = 1, Username = "TestUser" } };
+            _userService.Setup(service => service.GetUsers()).ReturnsAsync(users);
+
+            var result = await _userController.GetAllUsers();
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(200, parsedResult.StatusCode);
+            var usersList = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Users") as List<UserModel>;
+            Assert.Single(usersList!);
+            Assert.Equal("TestUser", usersList[0].Username);
+            _userService.Verify(service => service.GetUsers(), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetAllUsers_DatabaseFail()
+        {
+            _userService.Setup(service => service.GetUsers()).ThrowsAsync(new Exception("Database error"));
+
+            var result = await _userController.GetAllUsers();
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, parsedResult.StatusCode);
+            var error = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Error") as string;
+            Assert.Equal("Database error", error);
+            _userService.Verify(service => service.GetUsers(), Times.Once);
         }
 
         [Fact]

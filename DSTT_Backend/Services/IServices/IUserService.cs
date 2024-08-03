@@ -5,6 +5,7 @@ namespace DSTT_Backend.Services.IServices
 {
     public interface IUserService
     {
+        Task<List<UserModel>> GetUsers();
         Task<UserModel?> GetUser(int userId);
 
         Task<UserModel?> GetUser(string username);
