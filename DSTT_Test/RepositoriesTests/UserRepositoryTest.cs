@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.InMemory;
 
 namespace DSTT_Test.RepositoriesTests
 {
-    public class UserRepositoryTest : BaseTest
+    public class UserRepositoryTest : BaseRepositoryTest
     {
         private readonly UserRepository _userRepository;
 

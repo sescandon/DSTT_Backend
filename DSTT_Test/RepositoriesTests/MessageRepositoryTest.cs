@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DSTT_Test.RepositoriesTests
 {
-    public class MessageRepositoryTest : BaseTest
+    public class MessageRepositoryTest : BaseRepositoryTest
     {
         private readonly UserRepository _auxiliaryUserRepository;
         private readonly MessageRepository _messageRepository;

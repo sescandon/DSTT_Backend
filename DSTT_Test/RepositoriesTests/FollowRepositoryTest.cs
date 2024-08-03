@@ -3,12 +3,11 @@ using DSTT_Backend.Models.User;
 using DSTT_Backend.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using DSTT_Test;
 
 
 namespace DSTT_Test.RepositoriesTests
 {
-    public class FollowRepositoryTest : BaseTest
+    public class FollowRepositoryTest : BaseRepositoryTest
     {
         private readonly UserRepository _auxiliaryUserRepository;
         private readonly FollowRepository _followRepository;

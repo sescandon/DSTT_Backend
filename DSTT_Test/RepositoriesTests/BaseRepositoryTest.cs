@@ -6,13 +6,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DSTT_Test
+namespace DSTT_Test.RepositoriesTests
 {
-    public abstract class BaseTest
+    public abstract class BaseRepositoryTest
     {
         protected readonly DsttDbContext _context;
 
-        protected BaseTest()
+        protected BaseRepositoryTest()
         {
             var options = new DbContextOptionsBuilder<DsttDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
