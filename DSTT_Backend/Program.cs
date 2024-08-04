@@ -14,13 +14,13 @@ builder.Services.AddDbContext<DsttDbContext>(options =>
     options.UseInMemoryDatabase("VirtualDatabase")
 );
 
-builder.Services.AddScoped<IMessageRepository, MessageRepository>();
-builder.Services.AddScoped<IFollowRepository, FollowRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddSingleton<IMessageRepository, MessageRepository>();
+builder.Services.AddSingleton<IFollowRepository, FollowRepository>();
+builder.Services.AddSingleton<IUserRepository, UserRepository>();
 
-builder.Services.AddScoped<IMessageService, MessageService>();
-builder.Services.AddScoped<IFollowService, FollowService>();
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<IMessageService, MessageService>();
+builder.Services.AddSingleton<IFollowService, FollowService>();
+builder.Services.AddSingleton<IUserService, UserService>();
 
 builder.Services.AddCors(options =>
 {
