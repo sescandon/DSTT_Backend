@@ -221,5 +221,25 @@ namespace DSTT_Backend.Services
                 };
             }
         }
+
+        public async Task<MessageModel?> GetMessage(int messageId)
+        {
+                Message? message = await _messageRepository.GetMessage(messageId);
+
+                if (message == null)
+                {
+                    return null;
+                }
+
+                MessageModel messageModel = new MessageModel
+                {
+                    Id = message.Id,
+                    UserId = message.UserId,
+                    Content = message.Content,
+                    CreatedDate = message.CreatedDate
+                };
+
+                return messageModel;
+        }
     }
 }

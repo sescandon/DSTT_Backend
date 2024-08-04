@@ -250,6 +250,47 @@ namespace DSTT_Test.ControllersTests
             _messageService.Verify(service => service.GetDashboardMessages(1), Times.Once);
         }
 
+        [Fact]
+        public async Task GetMessage_Success()
+        {
+            _messageService.Setup(service => service.GetMessage(It.IsAny<int>())).ReturnsAsync(new MessageModel { Id = 1, UserId = 1, Content = "Test message", CreatedDate = DateTime.Now });
+
+            var result = await _messageController.GetMessage(1);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(200, parsedResult.StatusCode);
+            var message = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Message") as MessageModel;
+            Assert.Equal("Test message", message.Content);
+            _messageService.Verify(service => service.GetMessage(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetMessage_MessageDoesntExistFail()
+        {
+            _messageService.Setup(service => service.GetMessage(It.IsAny<int>())).ReturnsAsync((MessageModel)null);
+
+            var result = await _messageController.GetMessage(1);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(404, parsedResult.StatusCode);
+            var error = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Message") as string;
+            Assert.Equal("User was not found", error);
+            _messageService.Verify(service => service.GetMessage(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetMessage_DatabaseFail()
+        {
+            _messageService.Setup(service => service.GetMessage(It.IsAny<int>())).ThrowsAsync(new Exception("Database error"));
+
+            var result = await _messageController.GetMessage(1);
+
+            var parsedResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, parsedResult.StatusCode);
+            var error = AuxiliarClass.GetNestedPropertyValue(parsedResult.Value!, "Message") as string;
+            Assert.Equal("Internal server error", error);
+            _messageService.Verify(service => service.GetMessage(1), Times.Once);
+        }
 
     }
 }

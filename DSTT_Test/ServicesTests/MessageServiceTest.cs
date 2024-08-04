@@ -306,6 +306,31 @@ namespace DSTT_Test.ServicesTests
             _messageRepository.Verify(repo => repo.UpdateMessage(It.IsAny<string>(), It.IsAny<Message>()), Times.Once);
         }
 
+        [Fact]
+        public async Task GetMessage_Success()
+        {
+            _messageRepository.Setup(repo => repo.GetMessage(1)).ReturnsAsync(new Message { Id = 1, UserId = 1, Content = "TestMessage", CreatedDate = DateTime.Now });
+
+            var result = await _messageService.GetMessage(1);
+
+            Assert.NotNull(result);
+            Assert.Equal(1, result!.Id);
+            Assert.Equal(1, result.UserId);
+            Assert.Equal("TestMessage", result.Content);
+            _messageRepository.Verify(repo => repo.GetMessage(1), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetMessage_MessageDoesNotExistFail()
+        {
+            _messageRepository.Setup(repo => repo.GetMessage(1)).ReturnsAsync((Message)null);
+
+            var result = await _messageService.GetMessage(1);
+
+            Assert.Null(result);
+            _messageRepository.Verify(x => x.GetMessage(1), Times.Once);
+        }
+
 
     }
 }

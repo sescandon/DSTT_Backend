@@ -91,5 +91,29 @@ namespace DSTT_Backend.Controllers
             return StatusCode(200, new { Messages = messages });
         }
 
+        [HttpGet]
+        [Route("GetMessage/{messageId:int}")]
+        public async Task<IActionResult> GetMessage(int messageId)
+        {
+            try
+            {
+                MessageModel messageResult = await _messageService.GetMessage(messageId);
+                if (messageResult == null)
+                {
+                    return StatusCode(404, new { Message = "User was not found" });
+                }
+
+                return StatusCode(200, new { Message = messageResult });
+            }
+            catch (Exception ex)
+            {
+
+                return StatusCode(500, new { Message = "Internal server error", Error = ex.Message });
+            }
+            
+
+        
+        }
+
     }
 }
