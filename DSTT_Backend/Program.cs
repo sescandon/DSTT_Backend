@@ -10,7 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddDbContext<DsttDbContext>(options =>
-    options.UseSqlServer(Environment.GetEnvironmentVariable("DBConnectionString"))
+    //options.UseSqlServer(Environment.GetEnvironmentVariable("DBConnectionString"))
+    options.UseInMemoryDatabase("VirtualDatabase")
 );
 
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
@@ -39,6 +40,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    DataSeeder.SeedData(services);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
